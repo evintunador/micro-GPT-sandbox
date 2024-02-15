@@ -1,1 +1,1 @@
-the GPT i use as a base whenever starting a new experiment. based on andrej karpathy's [minGPT]()
+the GPT i use as a base whenever starting a new experiment. currently based on andrej karpathy's [minGPT]() but at some point soon i plan to upgrade everything to the basic llama setup with RoPE and whatnot
