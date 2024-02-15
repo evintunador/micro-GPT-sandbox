@@ -1,0 +1,1 @@
+the GPT i use as a base whenever starting a new experiment. based on andrej karpathy's [minGPT]()
