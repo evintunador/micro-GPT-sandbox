@@ -5,3 +5,4 @@ These are the base models I edit whenever I want to test a new architecture idea
 - `minGemma.ipynb` is based on [my youtube video guide to Gemma](https://youtu.be/WW7ZxaC3OtA?si=BheH1zSakFxXoHP4) which itself uses a little bit of karpathy's code but mostly [google's open-sourced Gemma inference code](https://github.com/google/gemma_pytorch)
 - `tokenizer.py` is just the end result of `tokenizer.ipynb` but setup so that the other models can call it
 - `minGrok.ipynb` is straight from [my youtube video guide to XAI's Grok](https://www.youtube.com/watch?v=K9Rdc848EBs) which has a corresponding [repo](https://github.com/evintunador/minGrok) and [Colab notebook](https://colab.research.google.com/drive/1o3RV23gIDVcfkxgTe2jnbLTKVyYuZTMM?usp=sharing)
+- `custom.ipynb` is the actual one i'm using rn. It's basically just minGemma.ipynb but with all the comments removed plus it uses the NTP mask and residual connection normalization from minGrok
