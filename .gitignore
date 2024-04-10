@@ -164,3 +164,6 @@ cython_debug/
 __pycache__/
 *.so
 *.DS_Store
+
+# tiny stories dataset is too big for github
+cleaned_data.pkl
