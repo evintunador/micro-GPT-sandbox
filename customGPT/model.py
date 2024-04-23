@@ -1,13 +1,14 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import math
 
 from tools import *
 from config import *
 
-#####################################################################################################################
-####################################### NORM ##############################################################################
-#####################################################################################################################
+###########################################################
+#################### NORM #######################################
+###########################################################
 class Norm(LoggingModule):
     def __init__(self, dim, cfg: Config):
         super().__init__()
@@ -17,9 +18,9 @@ class Norm(LoggingModule):
         self.affine = cfg.norm_affine
         self.bias = cfg.norm_bias
         if cfg.norm_affine:
-            self.w = nn.Parameter(torch.ones(cfg.embed_dim))
+            self.w = nn.Parameter(torch.ones(cfg.dim))
             if cfg.norm_bias:
-                self.b = nn.Parameter(torch.zeros(cfg.embed_dim))
+                self.b = nn.Parameter(torch.zeros(cfg.dim))
 
         # Mapping norm types to their respective methods
         self.type = cfg.norm_type
@@ -29,11 +30,11 @@ class Norm(LoggingModule):
             "RMSNorm": self.RMSNorm}
         # Ensure the specified norm type exists, default to RMSNorm if not found
         if self.type not in self.norm_methods:
-            self.type = "RMSNorm"
             print(f'norm type {self.type} not found. defaulting to RMSNorm')
+            self.type = "RMSNorm"
 
     @log_io
-    def forward(self, x: torch.Tensor, training: bool = False) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         norm_method = self.norm_methods[self.type]
         x = norm_method(x)
 
@@ -59,34 +60,35 @@ class Norm(LoggingModule):
     def RMSNorm(self, x):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
-#####################################################################################################################
-####################################### ATTENTION ##############################################################################
-#####################################################################################################################
+###########################################################
+#################### ATTENTION #######################################
+###########################################################
 def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
     t = torch.arange(end, device=freqs.device, dtype=torch.float32)
     freqs = torch.outer(t, freqs)
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)  # complex64
-    return freqs_cis.to(cfg.device)
+    return freqs_cis
 
-class MHSA(LoggingModule): # multi-head self-attention
+class MQSA(LoggingModule): # multi-head self-attention
     def __init__(self, cfg: Config):
         super().__init__()
-        self.n_q_heads = cfg.n_q_heads
-        self.n_kv_heads = cfg.n_q_heads if cfg.n_kv_heads is None else cfg.n_kv_heads
-        self.num_q_per_kv = self.sa_q_heads // self.sa_kv_heads
-        self.head_dim = cfg.dim // cfg.n_q_heads if cfg.head_dim is None else cfg.head_dim
+        self.num_q_heads = cfg.num_q_heads
+        self.num_kv_heads = cfg.num_q_heads if cfg.num_kv_heads is None else cfg.num_kv_heads
+        self.num_q_per_kv = self.num_q_heads // self.num_kv_heads
+        self.head_dim = cfg.dim // cfg.num_q_heads if cfg.head_dim is None else cfg.head_dim
+        self.dropout_rate = cfg.dropout_rate
 
-        self.Wq = nn.Linear(cfg.dim, cfg.n_q_heads * self.head_dim, bias=False)
-        self.Wk = nn.Linear(cfg.dim, self.n_kv_heads * self.head_dim, bias=False)
-        self.Wv = nn.Linear(cfg.dim, self.n_kv_heads * self.head_dim, bias=False)
-        self.Wo = nn.Linear(cfg.n_q_heads * self.head_dim, cfg.dim, bias=False)
+        self.Wq = nn.Linear(cfg.dim, cfg.num_q_heads * self.head_dim, bias=False)
+        self.Wk = nn.Linear(cfg.dim, self.num_kv_heads * self.head_dim, bias=False)
+        self.Wv = nn.Linear(cfg.dim, self.num_kv_heads * self.head_dim, bias=False)
+        self.Wo = nn.Linear(cfg.num_q_heads * self.head_dim, cfg.dim, bias=False)
 
         self.cache_k = torch.zeros(
-            (cfg.max_batch_size, cfg.max_seq_len, self.n_kv_heads, self.head_dim),
+            (cfg.max_batch_size, cfg.max_seq_len, self.num_kv_heads, self.head_dim),
             requires_grad = False).to(cfg.device)
         self.cache_v = torch.zeros(
-            (cfg.max_batch_size, cfg.max_seq_len, self.n_kv_heads, self.head_dim),
+            (cfg.max_batch_size, cfg.max_seq_len, self.num_kv_heads, self.head_dim),
             requires_grad = False).to(cfg.device)
     
     @log_io
@@ -101,13 +103,13 @@ class MHSA(LoggingModule): # multi-head self-attention
         batch_size, seqlen, _ = x.shape
         xq, xk, xv = self.Wq(x), self.Wk(x), self.Wv(x)
 
-        xq = xq.view(batch_size, seqlen, self.n_q_heads, self.head_dim)
-        xk = xk.view(batch_size, seqlen, self.n_kv_heads, self.head_dim)
-        xv = xv.view(batch_size, seqlen, self.n_kv_heads, self.head_dim)
+        xq = xq.view(batch_size, seqlen, self.num_q_heads, self.head_dim)
+        xk = xk.view(batch_size, seqlen, self.num_kv_heads, self.head_dim)
+        xv = xv.view(batch_size, seqlen, self.num_kv_heads, self.head_dim)
 
-        xq, xk = self.apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
+        xq, xk = self.apply_rotary_emb(xq, xk, freqs_cis)
 
-        if cache_len is not None: # if we're performing inference, use kv caching. it'll be 0 to begin with
+        if cache_len is not None: # if we're performing inference and using kv caching. it'll init at 0
             self.cache_k = self.cache_k.to(xq)
             self.cache_v = self.cache_v.to(xq)
 
@@ -123,34 +125,39 @@ class MHSA(LoggingModule): # multi-head self-attention
 
         # adjusts keys and values to match the query heads count.
         if self.num_kv_heads != self.num_q_heads:
-            keys, values = self.match_headcount(keys, values) # (batch_sizes, cache_len + seqlen, n_q_heads, head_dim)
+            keys, values = self.match_headcount(keys, values) # (batch_sizes, cache_len + seqlen, num_q_heads, head_dim)
 
-        queries = queries.transpose(1, 2)  # (bs, n_q_heads, seqlen, head_dim)
-        keys = keys.transpose(1, 2)  # (bs, n_q_heads, cache_len + seqlen, head_dim)
-        values = values.transpose(1, 2)  # (bs, n_q_heads, cache_len + seqlen, head_dim)
+        queries = queries.transpose(1, 2)  # (bs, num_q_heads, seqlen, head_dim)
+        keys = keys.transpose(1, 2)  # (bs, num_q_heads, cache_len + seqlen, head_dim)
+        values = values.transpose(1, 2)  # (bs, num_q_heads, cache_len + seqlen, head_dim)
         
-        logits = self.attend(keys, values, training)
+        logits = self.attend(queries, keys, training)
         if mask is not None:
-            logits = logits + mask  # (bs, n_q_heads, seqlen, cache_len + seqlen)
-        output = self.calc_output(logits, values, batch_size, seqlen, training) 
+            logits = logits + mask  # (bs, num_q_heads, seqlen, cache_len + seqlen)
+        output = self.calc_output(logits, values, training) 
         
         return F.dropout(self.Wo(output), p=self.dropout_rate, training=training)
     
     @log_io
     def apply_rotary_emb(
+        self,
         xq: torch.Tensor,
         xk: torch.Tensor,
         freqs_cis: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
         xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
-        freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
+        freqs_cis = self.reshape_for_broadcast(freqs_cis.to(xq.device), xq_)
         xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
         xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
         return xq_out.type_as(xq), xk_out.type_as(xk)
 
     @log_io
-    def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
+    def reshape_for_broadcast(
+        self,
+        freqs_cis: torch.Tensor, 
+        x: torch.Tensor
+    ):
         ndim = x.ndim
         assert 0 <= 1 < ndim
         assert freqs_cis.shape == (x.shape[1], x.shape[-1]), f'freqs_cis.shape {freqs_cis.shape} != (x.shape[1], x.shape[-1]) {(x.shape[1], x.shape[-1])}'
@@ -164,19 +171,25 @@ class MHSA(LoggingModule): # multi-head self-attention
         return keys, values
 
     @log_io
-    def attend(self, xq, xk, training):
-        return torch.matmul(xq, xk.transpose(2, 3)) * (self.head_dim ** -0.5)
+    def attend(self, queries, keys, training):
+        return torch.matmul(queries, keys.transpose(2, 3)) * (self.head_dim ** -0.5)
     
     @log_io
-    def calc_output(self, logits, values, batch_size, seqlen, training):
+    def calc_output(
+        self, 
+        logits, 
+        values, 
+        training
+    ):
+        batch_size, _, seqlen, _ = logits.shape
         scores = F.softmax(logits, dim=-1)
         scores = F.dropout(scores, p=self.dropout_rate, training=training)
         output = scores @ values # [batch_size, n_heads, seqlen, head_dim]
         return output.transpose(1, 2).contiguous().view(batch_size, seqlen, -1) # [batch_size, seqlen, n_heads * head_dim]
 
-######################################################################################################
-################################## MLP ####################################################################
-######################################################################################################
+###################################################
+################# MLP ##################################
+###################################################
 class MLP(LoggingModule):
     def __init__(
         self,
@@ -221,10 +234,10 @@ class MLP(LoggingModule):
 class TransformerBlock(LoggingModule):
     def __init__(self, layer_id: int, cfg: Config):
         super().__init__()
-        self.n_q_heads = cfg.n_q_heads
+        self.num_q_heads = cfg.num_q_heads
         self.dim = cfg.dim
-        self.head_dim = cfg.dim // cfg.n_q_heads
-        self.attention = Attention(cfg)
+        self.head_dim = cfg.dim // cfg.num_q_heads
+        self.attention = MQSA(cfg)
         self.feed_forward = MLP(
             dim=cfg.dim,
             hidden_dim=4 * cfg.dim,
@@ -254,14 +267,14 @@ class Llama3(LoggingModule):
         super().__init__()
         self.cfg = cfg
         self.vocab_size = cfg.vocab_size
-        self.n_layers = cfg.n_layers
+        self.num_layers = cfg.num_layers
         self.max_seq_len = cfg.max_seq_len
         self.tokenizer = tokenizer
 
         self.tok_embeddings = nn.Embedding(cfg.vocab_size, cfg.dim)
 
         self.layers = torch.nn.ModuleList()
-        for layer_id in range(cfg.n_layers):
+        for layer_id in range(cfg.num_layers):
             self.layers.append(TransformerBlock(layer_id, cfg))
 
         self.norm = Norm(cfg.dim, cfg)
@@ -271,9 +284,9 @@ class Llama3(LoggingModule):
             bias=False)
 
         self.freqs_cis = precompute_freqs_cis(
-            cfg.dim // cfg.n_q_heads,
+            cfg.dim // cfg.num_q_heads,
             cfg.max_seq_len * 2,
-            cfg.rope_theta,)
+            cfg.theta,).to(cfg.device)
 
         mask = torch.full((cfg.max_seq_len, cfg.max_seq_len), 
                           float("-inf"), 
@@ -365,7 +378,7 @@ class Llama3(LoggingModule):
         # sort the probabilities to for use in top-p & top-k. both are (batch_size, vocab_size)
         probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
 
-        ### calculating top-p
+        ## calculating top-p
         # creates same-size tensor of cumulatve probabilities instead of indivdiual probs
         probs_sum = torch.cumsum(probs_sort, dim=-1) 
         # mask where 0's are top-p selections & 1's are to be excluded
@@ -373,7 +386,7 @@ class Llama3(LoggingModule):
         # the original probabilities with excluded tokens changed to 0.0
         probs_sort = torch.where(top_ps_mask, 0, probs_sort) 
 
-        ### calculating top_k
+        ## calculating top_k
         # create a shape (vocab_size) tensor that just iterates up by 1's
         top_ks_mask = torch.arange(probs_idx.shape[-1], device=probs_idx.device) 
         # expand our mask along the batch_size dimension to become size (batch_size, vocab_size)

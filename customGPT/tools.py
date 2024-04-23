@@ -1,5 +1,6 @@
 import functools
 import inspect
+import torch
 from torch import nn
 
 # this function will be used throughout for debugging/demonstration purposes
