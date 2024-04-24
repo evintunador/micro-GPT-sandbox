@@ -11,7 +11,7 @@ class Config:
     dropout_rate = 0.1 # percent of neurons to set to 0 during training as a way of adding randomness & improving generalization
 
     # Residual Layers
-    num_layers: int = 12 # small models should err on the side of many many layers at the expense of attention & mlp sizes
+    num_layers: int = 10 # small models should err on the side of many many layers at the expense of attention & mlp sizes
     pre_connect_dropout: bool = False # True performs dropout before the residual connection
     second_resid_norm: bool = False # True adds an extra Norm after the attention & MLP, which Grok does. Only recommended for RMSNorm
     
@@ -24,7 +24,6 @@ class Config:
     # attention
     num_q_heads: int = 4 
     num_kv_heads: int = 1 
-    assert num_q_heads % num_kv_heads == 0, f'{num_q_heads} must be divisible by {num_kv_heads}'
     head_dim = dim // num_q_heads # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
     theta: float = 10_000 # 10_000 is the most common choice. Llama3 uses 50_000
     max_seq_len: int = 512 # 512 is the most my ran can handle
@@ -34,7 +33,7 @@ class Config:
     norm_type: str = 'RMSNorm' # options are 'RMSNorm', 'LayerNorm', and 'CosineNorm'. Add more options in 'model.py'
     norm_affine: bool = True # whether to use a linear layer after each norm
     norm_bias: bool = True # whether to add a bias to the linear layer after each norm. doesn't do anything if norm_affine == False
-    eps: float = 1e-5 # small constant to prevent division by 0. Not really worth editing
+    eps: float = 1e-6 # small constant to prevent division by 0. Not really worth editing
 
     # inference (kv caching)
     max_batch_size: int = 1 # i think batched inference is probably broken rn bc of my shitty tokenizer. might fix in future

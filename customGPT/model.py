@@ -7,7 +7,7 @@ from tools import *
 from config import *
 
 ###########################################################
-#################### NORM #######################################
+#################### NORM ##################################
 ###########################################################
 class Norm(LoggingModule):
     def __init__(self, dim, cfg: Config):
@@ -64,7 +64,7 @@ class Norm(LoggingModule):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
 ###########################################################
-#################### ATTENTION #######################################
+#################### ATTENTION #############################
 ###########################################################
 def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
@@ -78,6 +78,7 @@ class MQSA(LoggingModule): # multi-head self-attention
         super().__init__()
         self.num_q_heads = cfg.num_q_heads
         self.num_kv_heads = cfg.num_q_heads if cfg.num_kv_heads is None else cfg.num_kv_heads
+        assert cfg.num_q_heads % cfg.num_kv_heads == 0, f'num_q_heads must be divisible by num_kv_heads'
         self.head_dim = cfg.dim // cfg.num_q_heads if cfg.head_dim is None else cfg.head_dim
         self.dropout_rate = cfg.dropout_rate
 
@@ -193,7 +194,7 @@ class MQSA(LoggingModule): # multi-head self-attention
         return output.transpose(1, 2).contiguous().view(batch_size, seq_len, -1) # [batch_size, seq_len, n_heads * head_dim]
 
 ###################################################
-################# MLP ##################################
+################# MLP ###############################
 ###################################################
 class MLP(LoggingModule):
     def __init__(
@@ -239,7 +240,7 @@ class MLP(LoggingModule):
         return self.Wdown(hidden_neurons)
 
 ###################################################
-################# ResidualLayer ##################################
+################# ResidualLayer ####################
 ###################################################
 class ResidualLayer(LoggingModule):
     def __init__(self, cfg: Config):
@@ -307,14 +308,9 @@ class ResidualLayer(LoggingModule):
 ################# customGPT ##########################
 #####################################################
 class customGPT(LoggingModule):
-    def __init__(
-        self, 
-        cfg: Config, 
-        tokenizer
-    ):
+    def __init__(self, cfg: Config):
         super().__init__()
         self.device = cfg.device
-        self.tokenizer = tokenizer
         
         self.num_layers = cfg.num_layers
         self.max_seq_len = cfg.max_seq_len
@@ -355,6 +351,7 @@ class customGPT(LoggingModule):
             assert input_token_ids.shape == target_token_ids.shape
             assert seq_len == self.max_seq_len
             mask = self.mask
+            freqs_cis = self.freqs_cis
             training = True
             cache_len = None
         elif cache_len is not None: # if performing inference
@@ -362,11 +359,12 @@ class customGPT(LoggingModule):
             freqs_cis = self.freqs_cis[cache_len : cache_len + seq_len]
             mask = self.mask[:seq_len, :seq_len]
             mask = torch.hstack([torch.zeros((seq_len, cache_len), device=self.device), mask])#.type_as(x)
+            training = False
         else:
             assert InputError('both cache_len and target_token_ids cannot be NoneType')
         
         # initialize first residual state and run the model
-        x = self.tok_embedder(input_token_ids) * self.scale # [batch_size, seq_len, dim]
+        x = self.token_embedder(input_token_ids) * self.scale # [batch_size, seq_len, dim]
         for layer in self.layers:
             x = layer(
                 x, 
@@ -387,91 +385,3 @@ class customGPT(LoggingModule):
             loss = None
             
         return logits, loss
-
-    @torch.inference_mode() # no need to keep track of gradients during inference
-    def Sampler(
-        self,
-        logits: torch.Tensor, # (batch_size, input_len, vocab_size)
-        temperature: float, # controls how boring vs random the outputs should be
-        top_p: float, # the maximum cumulative probability of output options we're willing to consider
-        top_k: int, # the maximum number of output options we're willing to consider
-    ) -> torch.Tensor:
-        """The Sampler function is responsible for generating token predictions"""
-        
-        logits = logits[:,-1,:] # (batch_size, input_len, vocab_size) -> (batch_size, vocab_size)
-        logits.div_(temperature) # (batch_size, vocab_size) / float -> (batch_size, vocab_size)
-        probs = torch.softmax(logits, dim=-1, dtype=torch.float)
-        probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True) # both are (batch_size, vocab_size)
-
-        # calculating top-p
-        probs_sum = torch.cumsum(probs_sort, dim=-1) # (batch_size, vocab_size)
-        top_ps_mask = (probs_sum - probs_sort) > top_p # 0's are top-p selections & 1's are to be excluded
-        probs_sort = torch.where(top_ps_mask, 0, probs_sort) 
-
-        ## calculating top_k
-        top_ks_mask = torch.arange(probs_idx.shape[-1], device=probs_idx.device) # shape (vocab_size) tensor that iterates up by 1's
-        top_ks_mask = top_ks_mask.expand(probs_idx.shape[0], -1) # (batch_size, vocab_size)
-        top_ks_mask = top_ks_mask >= top_k
-
-        # combining top-p with top-k and using whichever gives us fewer tokens
-        probs_sort = torch.where(top_ks_mask, 0, probs_sort)
-        probs_sort.div_(probs_sort.sum(dim=-1, keepdim=True)) # Re-normalization so that total probabilities add up to 1
-        probs = torch.gather(probs_sort, dim=-1, index=torch.cfgort(probs_idx, dim=-1)) # putting indices back into original order
-        
-        # samples from the final distribution
-        next_token_id = torch.multinomial(probs, num_samples=1)
-        return next_token_id
-
-    @torch.inference_mode()
-    def generate(
-        self,
-        prompt: str,
-        max_gen_len: int = None,
-        memory_saver_div: int = 1, # defaults to full max_seq_len**2 memory use. must be power of 2
-        temperature: float = 0.6, # default value in meta's code
-        top_p: float = 0.9, # default value in meta's code
-        top_k: int = None, # meta's code doesn't bother with topk
-    ) -> str: 
-        """ Wrapper around sampler() that deals with manipulation of the sequence """
-        assert ((memory_saver_div & (memory_saver_div-1)) == 0) & (memory_saver_div > 0), f'memory_saver_div {memory_saver_div} must be power of 2'
-        if memory_saver_div != 1:
-            max_context_window = self.max_seq_len // memory_saver_div
-            print(f'maximum attention matrix size in memory will be {max_context_window}x{self.max_seq_len} rather than {self.max_seq_len}x{self.max_seq_len}\n')
-        if top_k is None:
-            top_k = self.vocab_len
-        
-        # encoding the prompt into token indices
-        tokens = self.tokenizer.encode(prompt)
-        
-        if max_gen_len is None:
-            max_gen_len = self.max_seq_len - len(tokens)
-        elif max_gen_len + len(tokens) > self.max_seq_len:
-            print(f'capping max_gen_len at max_seq_len={self.max_seq_len} including input\n')
-            max_gen_len = self.max_seq_len - len(tokens)
-
-        # turning it into the right tensor shape
-        tokens = torch.tensor(tokens, device=self.device)
-        assert len(tokens.shape) == 1, f'batched inference is not currently supported.'
-        tokens = tokens.unsqueeze(0) # to add a batch dimension
-        
-        cache_len = max(tokens.shape[1] - max_context_window, 0)
-        
-        for i in range(max_gen_len):
-            with torch.no_grad():
-                # get the model's output logits and ignore the loss
-                logits, _ = self.inference(tokens[:,-max_context_window:], cache_len)
-                
-                # turn the logits into probabilities and sample from them
-                next_token = self.Sampler(logits, temperature, top_p, top_k)
-    
-                # add our new token to the sequence
-                tokens = torch.cat((tokens, next_token), dim=1)
-
-            # update our kv cache length
-            if tokens.shape[1] >= max_context_window:
-                cache_len += 1
-
-        # decode our list of tokens to an actual string
-        output = self.tokenizer.decode(tokens.squeeze(0).tolist())
-
-        return output
