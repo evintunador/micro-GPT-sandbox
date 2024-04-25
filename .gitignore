@@ -77,6 +77,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+.virtual_documents/
 
 # IPython
 profile_default/
@@ -164,7 +165,3 @@ cython_debug/
 __pycache__/
 *.so
 *.DS_Store
-
-# tiny stories dataset is too big for github
-tiny_stories_train_data.pkl
-tiny_stories_val_data.pkl

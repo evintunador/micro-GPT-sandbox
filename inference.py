@@ -52,10 +52,10 @@ def generate(
         print(f'maximum attention matrix size in memory will be {max_context_window}x{max_seq_len} rather than {max_seq_len}x{max_seq_len}\n')
     if top_k is None:
         top_k = tokenizer.vocab_len
-        
+
     tokens = tokenizer.encode(prompt)
     max_gen_len = max_seq_len - len(tokens) if max_gen_len is None else max_gen_len
-    tokens = torch.tensor([tokens], device=model.device)
+    tokens = torch.tensor([tokens], device=model.device).to(torch.long)
     assert tokens.shape[0] == 1, f'batched inference is not currently supported.'
 
     cache_len = max(tokens.shape[1] - max_context_window, 0)
@@ -65,8 +65,10 @@ def generate(
                 
         # turn the logits into probabilities and sample from them
         next_token = sampler(logits, temperature, top_p, top_k, vocab_len, model.device)
-    
-        # add our new token to the sequence
+
+        # if the model outputs the eos token, we're done
+        if next_token == tokenizer.eos_id: break
+        # otherwise, add our new token to the sequence
         tokens = torch.cat([tokens, next_token], dim=-1)
 
         # update our kv cache length
