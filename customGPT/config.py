@@ -7,7 +7,7 @@ class Config:
     # general
     dim: int = 128 
     vocab_len: int = None # will be set later according to what tokenizer you choose
-    device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device: str = 'cuda' if torch.cuda.is_available() else 'cpu' # can't do MPS because pytorch metal doesn't support complex values used in RoPE
     dropout_rate = 0.1 # percent of neurons to set to 0 during training as a way of adding randomness & improving generalization
 
     # Residual Layers
@@ -26,7 +26,7 @@ class Config:
     num_kv_heads: int = 1 
     head_dim = dim // num_q_heads # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
     theta: float = 10_000 # 10_000 is the most common choice. Llama3 uses 50_000
-    max_seq_len: int = 512 # 512 is the most my ran can handle
+    max_seq_len: int = 512 # 512 is the most my ram can handle
 
     # normalization
     scale_first_resid: bool = True # whether to multiply the first residual state by sqrt(dim)
