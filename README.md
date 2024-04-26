@@ -24,16 +24,19 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 
 # TODOs
 - [x] setup to use TinyStories dataset by default
-    - [x] rewrite `tokenizer_TinyStories.py` with features like bos, eos and padding
+    - [x] rewrite `tokenizer.py` with features like bos, eos and padding
 - [ ] periodically save model checkpoints
 - [ ] create a hyperparameter search loop
-- [ ] record loss values more permanently & setup a way to compare loss curves between models
+- [x] record loss values more permanently & setup a way to compare loss curves between models
+- [ ] setup .py files to be runnable in terminal rather than in the .ipynb files
+- [ ] rebuild the tokenizer to use a more complicated regex and also be bigger
 
 # potential future TODOs
 - [ ] setup to use TinyShakespeare as an option in either `config.py` or `training.ipynb` and use a dataloader instead of loading the entire dataset into ram
 - [ ] fix & enable batched inference
 - [ ] add an option to use a pre-built tokenizer like GPT2's
-- [ ] add options for different learning rate schedules
+- [ ] add an option to train on attention chunks? or maybe these new RNN-transformers that google is marketing as infinte attention? 
+- [x] add options for different learning rate schedules
 - [ ] add option to continually train pre-existing model & update its training data/hyperparameters accordingly
 - [ ] add in an MoE option. likely won't do this until i stumble upon multiple GPUs to run in parallel
 - [ ] add sparse/local attention mask options

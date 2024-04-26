@@ -3,14 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-from tools import *
-from config import *
+from tools import LoggingModule
 
 ###########################################################
 #################### NORM ##################################
 ###########################################################
 class Norm(LoggingModule):
-    def __init__(self, dim, cfg: Config):
+    def __init__(self, dim, cfg):
         super().__init__()
         self.eps = cfg.eps
 
@@ -74,7 +73,7 @@ def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     return freqs_cis
 
 class MQSA(LoggingModule): # multi-head self-attention
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg):
         super().__init__()
         self.num_q_heads = cfg.num_q_heads
         self.num_kv_heads = cfg.num_q_heads if cfg.num_kv_heads is None else cfg.num_kv_heads
@@ -243,7 +242,7 @@ class MLP(LoggingModule):
 ################# ResidualLayer ####################
 ###################################################
 class ResidualLayer(LoggingModule):
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg):
         super().__init__()
         self.second_norm = cfg.second_resid_norm
         self.dropout_rate = cfg.dropout_rate
@@ -308,7 +307,7 @@ class ResidualLayer(LoggingModule):
 ################# customGPT ##########################
 #####################################################
 class customGPT(LoggingModule):
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg):
         super().__init__()
         self.device = cfg.device
         

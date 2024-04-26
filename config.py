@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 import torch
 
 @dataclass
-class Config:
+class ModelConfig:
     # general
     dim: int = 64
     vocab_len: int = None # will be set later according to what tokenizer you choose
@@ -37,3 +37,23 @@ class Config:
 
     # inference (kv caching)
     max_batch_size: int = 1 # i think batched inference is probably broken rn bc of my shitty tokenizer. might fix in future
+
+@dataclass
+class TrainConfig:
+    # optimizer
+    weight_decay = 0.02
+    
+    # learning rate annealing
+    lr_max = 1e-2
+    lr_min = 1e-5 # if you'd like a flat learning rate, set lr_max = lr_min and ignore the variables below
+    max_iters = 1000 # total number of batches to run over the course of training
+    warmup_iters = int(max_iters * 0.05) # if you don't want to use a lr warmup, set = 0
+    final_flat_iters = int(max_iters * 0.2) # if you don't want to use a final flat lr at the end, set = 0
+    num_restarts = 3 # if you don't want to use warm restarts, set =0
+    T_mult = 2 # if you want your warm restarts to all be the same length, set =1
+    anneal_type = 'cos' # type of annealment to use. options: 'cos' and 'lin'
+    
+    # Calculates T_0 in a way that ensures smooth transition to the final flat learning rate
+    def T_0(self):
+        middle_section = self.max_iters - self.warmup_iters - self.final_flat_iters
+        return middle_section / sum(self.T_mult ** i for i in range(self.num_restarts+1))
