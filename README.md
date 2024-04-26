@@ -3,7 +3,6 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 
 # File Structure
 - `requirements.txt` - I should probably change this to use `>=` instead of `==` and only the packages that are actually necessary, which i think are just pandas, datasets and torch. The command I used to get this list is `pip freeze | grep -v " @ file://" > requirements.txt`
-- `data_TinyShakespeare.txt` - not currently being used. i need to make this fetch from the internet with a dataloader instead of being loaded locally & entirely into ram
 - `config.py` - all of the settings. the defaults are pretty similar to [minLlama3](https://github.com/evintunador/minLlama3)
 - `inference.py` - functions for performing inference. maybe at some point i'll make it support batched inference
 - `model.py`
@@ -13,14 +12,10 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 - `testing_modules.ipynb` - allows you to follow the progression of tensor shapes
 - `training.ipynb` - sets up stuff like the data loader and trains the model
 - `tokenizers/`
-    - `build_tokenizer_TinyShakespeare.ipynb` - need to redo this with better regex
-    - `build_tokenizer_TinyStories.ipynb` - need to redo this with better regex & larger vocab size
-    - `tokenizer_TinyShakespeare.py` - the tiny shakespeare dataset doesn't get stuff like bos & eos tokens so it has a differen ttokenizer
-    - `tiny_shakespeare_tokenizer_{128, 256, 512, 1024}.model`
-    - `tiny_stories_tokenizer_{128, 256, 512, 1024}.model`
+    - `build_tokenizer_TinyStories.ipynb` - need to redo this with better regex
+    - `tiny_stories_tokenizer_{128, 256, 512, 1024}.model` - need to make larger vocab sizes
 - `models/`
-    - `customGPT_2024-04-25|10-16-11.pth` - a 1.5m parameter model that hasn't been trained, just for testing
-    - `customGPT_2024-04-25|10-16-11.json` - config file of above model
+    - to be filled out
 
 # TODOs
 - [x] setup to use TinyStories dataset by default
@@ -33,10 +28,9 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 - [ ] add a loss mask to prevent from training on the padding tokens
 
 # potential future TODOs
-- [ ] setup to use TinyShakespeare as an option in either `config.py` or `training.ipynb` and use a dataloader instead of loading the entire dataset into ram
 - [ ] fix & enable batched inference
-- [ ] add an option to use a pre-built tokenizer like GPT2's
-- [ ] add an option to train on attention chunks? or maybe these new RNN-transformers that google is marketing as infinte attention? 
+- [ ] add an option to use a pre-built tokenizer like GPT2's?
+- [ ] add an option to train on attention chunks? maybe these new RNN-transformers that google is marketing as infinte attention? 
 - [x] add options for different learning rate schedules
 - [ ] add option to continually train pre-existing model & update its training data/hyperparameters accordingly
 - [ ] add in an MoE option. likely won't do this until i stumble upon multiple GPUs to run in parallel
