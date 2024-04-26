@@ -39,7 +39,7 @@ def generate(
     tokenizer,
     max_gen_len: int = None,
     memory_saver_div: int = 1, # defaults to full max_seq_len**2 memory use. must be power of 2
-    temperature=0.6,
+    temperature=0.7,
     top_p=0.9,
     top_k=None,
 ):

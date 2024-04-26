@@ -324,7 +324,7 @@ class customGPT(LoggingModule):
         self.final_norm = Norm(cfg.dim, cfg)
 
         freqs_cis = precompute_freqs_cis(
-            cfg.dim // cfg.num_q_heads,
+            cfg.head_dim,
             cfg.max_seq_len,
             cfg.theta
         ).to(cfg.device)

@@ -5,26 +5,26 @@ import torch
 @dataclass
 class Config:
     # general
-    dim: int = 128 
+    dim: int = 64
     vocab_len: int = None # will be set later according to what tokenizer you choose
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu' # can't do MPS because pytorch metal doesn't support complex values used in RoPE
     dropout_rate = 0.1 # percent of neurons to set to 0 during training as a way of adding randomness & improving generalization
 
     # Residual Layers
-    num_layers: int = 10 # small models should err on the side of many many layers at the expense of attention & mlp sizes
+    num_layers: int = 12 # small models should err on the side of many many layers at the expense of attention & mlp sizes
     pre_connect_dropout: bool = False # True performs dropout before the residual connection
-    second_resid_norm: bool = False # True adds an extra Norm after the attention & MLP, which Grok does. Only recommended for RMSNorm
+    second_resid_norm: bool = True # True adds an extra Norm after the attention & MLP, which Grok does. Only recommended for RMSNorm
     
     # MLP
-    mlp_hidden_mult: int = 2 # 4 is the most common and 8 is the highest I've seen. Really adds a ton of parameters
-    mlp_bias: bool = False # whether to use bias weights. Llama3 does not and I'm partial to their choice
+    mlp_hidden_mult: int = 4 # 4 is the most common and 8 is the highest I've seen. Really adds a ton of parameters
+    mlp_bias: bool = True # whether to use bias weights. Llama3 does not and I'm partial to their choice
     mlp_nonlinearity: str = 'GeLU' # options are 'GeLU', 'SiLU', and 'ReLU'. Add more options in 'model.py'
     mlp_gated: bool = True # True gives you 50% more MLP parameters to train. Turns GeLU into GeGLU, SiLU into SwiGLU, etc.
 
     # attention
-    num_q_heads: int = 4 
-    num_kv_heads: int = 1 
-    head_dim = dim // num_q_heads # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
+    num_q_heads: int = 4
+    num_kv_heads: int = 1
+    head_dim = 32 # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
     theta: float = 10_000 # 10_000 is the most common choice. Llama3 uses 50_000
     max_seq_len: int = 512 # 512 is the most my ram can handle
 
