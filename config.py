@@ -5,28 +5,28 @@ import torch
 @dataclass
 class ModelConfig:
     # general
-    dim: int = 64
+    dim: int = 32
     vocab_len: int = None # will be set later according to what tokenizer you choose
-    device: str = 'cuda' if torch.cuda.is_available() else 'cpu' # can't do MPS because pytorch metal doesn't support complex values used in RoPE
+    device: str = 'cuda' if torch.cuda.is_available() else 'cpu' # can't do MPS bc metal doesn't support complex64 used in RoPE
     dropout_rate = 0.1 # percent of neurons to set to 0 during training as a way of adding randomness & improving generalization
 
     # Residual Layers
-    num_layers: int = 12 # small models should err on the side of many many layers at the expense of attention & mlp sizes
-    pre_connect_dropout: bool = False # True performs dropout before the residual connection
-    second_resid_norm: bool = True # True adds an extra Norm after the attention & MLP, which Grok does. Only recommended for RMSNorm
+    num_layers: int = 2 # small models should err on the side of many many layers at the expense of attention & mlp sizes
+    pre_connect_dropout: bool = False # True performs dropout before the residual connection (only when training)
+    second_resid_norm: bool = False # True adds an extra Norm after the attn & MLP, like in Grok. Only recommended for RMSNorm
     
     # MLP
-    mlp_hidden_mult: int = 4 # 4 is the most common and 8 is the highest I've seen. Really adds a ton of parameters
-    mlp_bias: bool = True # whether to use bias weights. Llama3 does not and I'm partial to their choice
+    mlp_hidden_mult: int = 2 # 4 is the most common and 8 is the highest I've seen. Really adds a ton of parameters
+    mlp_bias: bool = False # whether to use bias weights. Llama3 does not and I'm partial to their choice
     mlp_nonlinearity: str = 'GeLU' # options are 'GeLU', 'SiLU', and 'ReLU'. Add more options in 'model.py'
     mlp_gated: bool = True # True gives you 50% more MLP parameters to train. Turns GeLU into GeGLU, SiLU into SwiGLU, etc.
 
     # attention
     num_q_heads: int = 4
     num_kv_heads: int = 1
-    head_dim = 32 # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
+    head_dim = 16 # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
     theta: float = 10_000 # 10_000 is the most common choice. Llama3 uses 50_000
-    max_seq_len: int = 512 # 512 is the most my ram can handle
+    max_seq_len: int = 128 # 512 is the most my ram can handle
 
     # normalization
     scale_first_resid: bool = True # whether to multiply the first residual state by sqrt(dim)
@@ -36,24 +36,37 @@ class ModelConfig:
     eps: float = 1e-6 # small constant to prevent division by 0. Not really worth editing
 
     # inference (kv caching)
-    max_batch_size: int = 1 # i think batched inference is probably broken rn bc of my shitty tokenizer. might fix in future
+    max_batch_size: int = 1 
+    # i think batched inference is probably broken rn bc of my shitty tokenizer. might fix in future
 
 @dataclass
 class TrainConfig:
-    # optimizer
     weight_decay = 0.02
+    batch_size = 32
     
-    # learning rate annealing
+    ### to visualize your learning rate schedule, see cell 7 of training.ipynb
+    
+    # if you'd like a flat learning rate, set lr_min = lr_max and ignore the variables below
     lr_max = 1e-2
-    lr_min = 1e-5 # if you'd like a flat learning rate, set lr_max = lr_min and ignore the variables below
-    max_iters = 1000 # total number of batches to run over the course of training
-    warmup_iters = int(max_iters * 0.05) # if you don't want to use a lr warmup, set = 0
+    lr_min = 1e-5 
+    
+    # total number of batches to run over the course of training
+    max_iters = 10
+    # how often to print out & record an update on how training is going
+    eval_interval = 2
+    # number of iterations for a linear warmup from lr_min to lr_max
+    warmup_iters = int(max_iters * 0.02) # if you don't want to use a lr warmup, set = 0
+    # number of iterations for a constant learning rate of lr_min at the end of training
     final_flat_iters = int(max_iters * 0.2) # if you don't want to use a final flat lr at the end, set = 0
+    
+    # number of times to bring the learning rate back up from lr_min to lr_max in-between the warmup & final flat
     num_restarts = 3 # if you don't want to use warm restarts, set =0
-    T_mult = 2 # if you want your warm restarts to all be the same length, set =1
-    anneal_type = 'cos' # type of annealment to use. options: 'cos' and 'lin'
+    # relative length of each warm restart compared to the previous.
+    T_mult = 2 # if you want all to be the same length, set =1. <1 means they get shorter and >1 makes them longer
+    # type of annealment to use. Annealment means that the learning rate decreases over the course of training
+    anneal_type = 'cos' # options: 'cos' and 'lin'
     
     # Calculates T_0 in a way that ensures smooth transition to the final flat learning rate
-    def T_0(self):
+    def T_0(self): # I DO NOT RECOMMEND EDITING THIS
         middle_section = self.max_iters - self.warmup_iters - self.final_flat_iters
         return middle_section / sum(self.T_mult ** i for i in range(self.num_restarts+1))

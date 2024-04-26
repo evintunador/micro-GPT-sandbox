@@ -53,25 +53,27 @@ def estimate_loss(model, tokenizer, dataloader, eval_iters = 3): # to estimate l
     model.train() # just resets to training mode
     return out
 
-def scheduler_lambda(current_iter, debug=False):
-    T_i = T_0
-    if current_iter < warmup_iters:
+def scheduler_lambda(current_iter):
+    from config import TrainConfig
+    tcfg = TrainConfig()
+    T_i = tcfg.T_0()
+    if current_iter < tcfg.warmup_iters:
         # Linear warmup
-        lr = lr_min + (lr_max - lr_min) * (current_iter / warmup_iters)
-    elif current_iter < max_iters - final_flat_iters:
+        lr = tcfg.lr_min + (tcfg.lr_max - tcfg.lr_min) * (current_iter / tcfg.warmup_iters)
+    elif current_iter < tcfg.max_iters - tcfg.final_flat_iters:
         # Cosine annealing with warm restarts
-        cycle_iter = current_iter - warmup_iters
+        cycle_iter = current_iter - tcfg.warmup_iters
         while cycle_iter >= T_i:
             cycle_iter -= T_i
-            T_i *= T_mult
-        if anneal_type == 'lin': 
-            lr = lr_max - (lr_max - lr_min) * (cycle_iter / T_i)
+            T_i *= tcfg.T_mult
+        if tcfg.anneal_type == 'lin': 
+            lr = tcfg.lr_max - (tcfg.lr_max - tcfg.lr_min) * (cycle_iter / T_i)
         else:
             # defaults to 'cos' learning rate annealing
-            lr = lr_min + 0.5 * (lr_max - lr_min) * (1 + torch.cos(torch.pi * torch.tensor(cycle_iter / T_i)))
+            lr = tcfg.lr_min + 0.5 * (tcfg.lr_max - tcfg.lr_min) * (1 + torch.cos(torch.pi * torch.tensor(cycle_iter / T_i)))
     else:
         # Constant learning rate
-        lr = lr_min
+        lr = tcfg.lr_min
     return lr
 
 def train(
@@ -80,10 +82,9 @@ def train(
     cfg, 
     optimizer,
     scheduler,
-    train_cfg, 
+    tcfg, 
     train_data_loader,
     test_data_loader,
-    eval_interval = 50, 
     log_data: list = None, 
     checkpoint_interval = None, # currently doesn't do anything
     detect_anomoly = False # use if you're getting crazy errors about a the gradient being broken
@@ -96,7 +97,7 @@ def train(
     
     start_time = time.time()
     
-    for i in range(train_cfg.max_iters):
+    for i in range(tcfg.max_iters):
     
         # sample a batch of data
         batch = next(iter(train_data_loader))
@@ -110,7 +111,7 @@ def train(
         scheduler.step() # Update the learning rate
         
         # every once in a while evaluate the loss on train and val sets
-        if i % eval_interval == 0 or i == max_iters - 1:
+        if i % tcfg.eval_interval == 0 or i == tcfg.max_iters - 1:
             elapsed_time = time.time() - start_time
             losses = estimate_loss(model, tokenizer, test_data_loader)
             current_lr = optimizer.param_groups[0]['lr']
@@ -123,8 +124,6 @@ def train(
                 losses['val'].mean().item(),
                 torch.exp(losses['val']).mean().item(),
                 elapsed_time,
-                batch_size,
-                weight_decay
             ])
             print(
                 f"step {i:04d}: lr {current_lr:.6f}, train loss {losses['train'].mean().item():.4f}, "

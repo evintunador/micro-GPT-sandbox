@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-
-from tools import LoggingModule
+from typing import Optional, Tuple
+from tools import LoggingModule, log_io
 
 ###########################################################
 #################### NORM ##################################
@@ -20,7 +20,7 @@ class Norm(LoggingModule):
             self.w = nn.Parameter(torch.ones(cfg.dim))
             if cfg.norm_bias:
                 self.b = nn.Parameter(torch.zeros(cfg.dim))
-        elif cfg.bias:
+        elif cfg.norm_bias:
             print('cannot have both norm_affine=False and norm_bias=True. Skipping bias')
 
         # Mapping norm types to their respective methods

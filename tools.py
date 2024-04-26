@@ -6,11 +6,11 @@ import functools
 import inspect
 
 # used to save & load models
+import os
 import json
 from dataclasses import asdict
-from model import customGPT
-from config import ModelConfig
-from tokenizer import get_tokenizer
+import time
+import csv
 
 # this function will be used throughout for debugging/demonstration purposes
 # using this is way cleaner than cluttering up our code with print statements
@@ -81,12 +81,13 @@ class LoggingModule(nn.Module):
 
 
 ###### Saving & Loading Models
-def save_model(model, cfg, log_data = None):
-    name = f'models/{model.__class__.__name__}_{time.strftime("%Y-%m-%d|%H-%M")}.csv'
-
+def save_model(model, cfg, tcfg, log_data = None):
+    model_name = f'models/{model.__class__.__name__}_{time.strftime("%Y-%m-%d|%H-%M")}'
+    os.makedirs(model_name, exist_ok=True)
+    
     if log_data is not None:
         # Save training data to CSV
-        with open(name, 'w', newline='') as f:
+        with open(f'{model_name}/log_data.csv', 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([
                 'Step', 
@@ -94,46 +95,69 @@ def save_model(model, cfg, log_data = None):
                 'Train Loss', 
                 'Validation Loss', 
                 'Perplexity', 
-                'Time Elapsed', 
-                'Batch Size', 
-                'Weight Decay'
+                'Time Elapsed'
             ])
             writer.writerows(log_data)
     
     # saving model
-    torch.save(model.state_dict(), f'{name}.pth')
+    torch.save(model.state_dict(), f'{model_name}/model.pth')
     
-    # saving config
+    # saving configs
     cfg_dict = asdict(cfg)
-    with open(f'{name}.json', 'w') as f:
+    with open(f'{model_name}/model_config.json', 'w') as f:
         json.dump(cfg_dict, f)
+    tcfg_dict = asdict(tcfg)
+    with open(f'{model_name}/train_config.json', 'w') as f:
+        json.dump(tcfg_dict, f)
 
 def load_model(
     name: str, 
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
 ):
+    from config import ModelConfig
+    from tokenizer import get_tokenizer
+    from model import customGPT
+
+    model_name = f'models/{name}'
+    
     # Deserialize the JSON file back to a dictionary
-    with open(f'models/{name}.json', 'r') as f:
-        config_dict = json.load(f)
+    #with open(f'{model_name}/model_config.json', 'r') as f:
+        #config_dict = json.load(f)
     
     # Convert the dictionary back to a Config object
+    #cfg = ModelConfig(**config_dict)
+    #cfg.device = device
+
+    #cfg = ModelConfig()
+    #cfg.device = device
+    #with open(f'{model_name}/model_config.json', 'w') as f:
+        #json.dump(cfg.__dict__, f)
+
+    config_dict = {
+        # Load the default config
+        **ModelConfig().__dict__,
+        # Update with the saved config
+        **json.load(open(f'{model_name}/model_config.json', 'r'))
+    }
     cfg = ModelConfig(**config_dict)
     cfg.device = device
+
+    print(cfg)
     
     # tokenizer
-    size = cfg.vocab_len # size options are 128, 256, 512 and 1024
-    path = f'./tokenizers/tiny_stories_tokenizer_{size-3}.model'
+    path = f'./tokenizers/tiny_stories_tokenizer_{cfg.vocab_len-3}.model'
     tokenizer = get_tokenizer(path) 
     
     # Initialize a blank model
-    model = customGPT(cfg).to(cfg.device)  
+    model = customGPT(cfg).to(cfg.device) 
+    #print('1: ', model)
     
     # Load the saved state dictionary
-    path = f'models/{name}.pth'
+    path = f'{model_name}/model.pth'
     model.load_state_dict(torch.load(path)) 
     
-    # print the number of parameters in the model
+    print(cfg)
     print(sum(p.numel() for p in model.parameters())/1e3, 'K parameters')
-    print(model)
+    #print('2: ', model)
 
     return model, tokenizer, cfg
