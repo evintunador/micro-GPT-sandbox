@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import torch
+import time
 
 @dataclass
 class ModelConfig:
@@ -41,30 +42,34 @@ class ModelConfig:
 
 @dataclass
 class TrainConfig:
-    weight_decay = 0.02
-    batch_size = 32
+    weight_decay: float = 0.02
+    batch_size: int = 32
+    # name of the folder the model will be saved into
+    model_name = f'{time.strftime("%Y-%m-%d|%H-%M")}'
+    # total number of batches to run over the course of training
+    max_iters: int = 10 # i recommend at least 1_000
+    # how often to print out & record an update on how training is going
+    eval_interval: int = 5 # doing this too often slows things down hella
+    # how often to save a checkpoint
+    checkpoint_interval: int = eval_interval # set to None if you don't want checkpoints
     
-    ### to visualize your learning rate schedule, see cell 7 of training.ipynb
+    ### to visualize the learning rate schedule you define here, see cell 7 of training.ipynb
     
     # if you'd like a flat learning rate, set lr_min = lr_max and ignore the variables below
-    lr_max = 1e-2
-    lr_min = 1e-5 
+    lr_max: float = 1e-2
+    lr_min: float = 1e-5 
     
-    # total number of batches to run over the course of training
-    max_iters = 10
-    # how often to print out & record an update on how training is going
-    eval_interval = 2
     # number of iterations for a linear warmup from lr_min to lr_max
-    warmup_iters = int(max_iters * 0.02) # if you don't want to use a lr warmup, set = 0
+    warmup_iters: int = int(max_iters * 0.1) # if you don't want to use a lr warmup, set = 0
     # number of iterations for a constant learning rate of lr_min at the end of training
-    final_flat_iters = int(max_iters * 0.2) # if you don't want to use a final flat lr at the end, set = 0
+    final_flat_iters: int = int(max_iters * 0.2) # if you don't want to use a final flat lr at the end, set = 0
     
     # number of times to bring the learning rate back up from lr_min to lr_max in-between the warmup & final flat
-    num_restarts = 3 # if you don't want to use warm restarts, set =0
+    num_restarts: int = 0 # if you don't want to use warm restarts, set =0
     # relative length of each warm restart compared to the previous.
-    T_mult = 2 # if you want all to be the same length, set =1. <1 means they get shorter and >1 makes them longer
-    # type of annealment to use. Annealment means that the learning rate decreases over the course of training
-    anneal_type = 'cos' # options: 'cos' and 'lin'
+    T_mult: int = 2 # if you want all to be the same length, set =1. <1 means they get shorter and >1 makes them longer
+    # type of annealment to use. Annealment is when the learning rate decreases over the course of training
+    anneal_type: str = 'cos' # options: 'cos' and 'lin'
     
     # Calculates T_0 in a way that ensures smooth transition to the final flat learning rate
     def T_0(self): # I DO NOT RECOMMEND EDITING THIS

@@ -25,11 +25,12 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 # TODOs
 - [x] setup to use TinyStories dataset by default
     - [x] rewrite `tokenizer.py` with features like bos, eos and padding
-- [ ] periodically save model checkpoints
+- [x] periodically save model checkpoints
 - [ ] create a hyperparameter search loop
 - [x] record loss values more permanently & setup a way to compare loss curves between models
 - [ ] setup .py files to be runnable in terminal rather than in the .ipynb files
 - [ ] rebuild the tokenizer to use a more complicated regex and also be bigger
+- [ ] add a loss mask to prevent from training on the padding tokens
 
 # potential future TODOs
 - [ ] setup to use TinyShakespeare as an option in either `config.py` or `training.ipynb` and use a dataloader instead of loading the entire dataset into ram
@@ -41,8 +42,7 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 - [ ] add in an MoE option. likely won't do this until i stumble upon multiple GPUs to run in parallel
 - [ ] add sparse/local attention mask options
 - [ ] make it parallelizable over multiple GPUs with fairscale
-- [ ] add mamba block? ugh probably not, mamba's code is not fun
-- [ ] add a DiffuSeq alternative instead of NTP? ugh probably not, that'd be a whole different repo
+- [ ] refactor everything to fit with better programming practices that i'm not aware of
 
 # check me out
 - guides on how to build miniature versions of popular models from scratch: [minGemma](https://github.com/evintunador/minGemma), [minGrok](https://github.com/evintunador/minGrok), and [minLlama3](https://github.com/evintunador/minLlama3)

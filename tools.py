@@ -81,13 +81,16 @@ class LoggingModule(nn.Module):
 
 
 ###### Saving & Loading Models
-def save_model(model, cfg, tcfg, log_data = None):
-    model_name = f'models/{model.__class__.__name__}_{time.strftime("%Y-%m-%d|%H-%M")}'
-    os.makedirs(model_name, exist_ok=True)
+def save_model(model, cfg, tcfg, log_data = None, checkpoint = False):
+    if checkpoint == False:
+        path = f'models/{tcfg.model_name}'
+    else: 
+        path = f'models/{tcfg.model_name}/checkpoint-{time.strftime("%Y-%m-%d|%H-%M")}'
+    os.makedirs(path, exist_ok=True)
     
     if log_data is not None:
         # Save training data to CSV
-        with open(f'{model_name}/log_data.csv', 'w', newline='') as f:
+        with open(f'{path}/log_data.csv', 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([
                 'Step', 
@@ -100,14 +103,14 @@ def save_model(model, cfg, tcfg, log_data = None):
             writer.writerows(log_data)
     
     # saving model
-    torch.save(model.state_dict(), f'{model_name}/model.pth')
+    torch.save(model.state_dict(), f'{path}/model.pth')
     
     # saving configs
     cfg_dict = asdict(cfg)
-    with open(f'{model_name}/model_config.json', 'w') as f:
+    with open(f'{path}/model_config.json', 'w') as f:
         json.dump(cfg_dict, f)
     tcfg_dict = asdict(tcfg)
-    with open(f'{model_name}/train_config.json', 'w') as f:
+    with open(f'{path}/train_config.json', 'w') as f:
         json.dump(tcfg_dict, f)
 
 def load_model(
@@ -135,7 +138,9 @@ def load_model(
 
     config_dict = {
         # Load the default config
-        **ModelConfig().__dict__,
+        **ModelConfig().__dict__
+    }
+    config_dict = {
         # Update with the saved config
         **json.load(open(f'{model_name}/model_config.json', 'r'))
     }

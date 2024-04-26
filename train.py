@@ -86,10 +86,11 @@ def train(
     train_data_loader,
     test_data_loader,
     log_data: list = None, 
-    checkpoint_interval = None, # currently doesn't do anything
-    detect_anomoly = False # use if you're getting crazy errors about a the gradient being broken
+    detect_anomoly: bool = False # use if you're getting crazy errors about a the gradient being broken
 ):
-    if log_data is None:
+    from tools import save_model # for checkpoints
+    
+    if log_data is None: # for recording loss/ppl curves
         log_data = []
     
     # Enable anomaly detection. useful for really deep issues in the model where the gradient breaks
@@ -111,12 +112,12 @@ def train(
         scheduler.step() # Update the learning rate
         
         # every once in a while evaluate the loss on train and val sets
-        if i % tcfg.eval_interval == 0 or i == tcfg.max_iters - 1:
+        if (i % tcfg.eval_interval) == 0 or (i == tcfg.max_iters - 1):
             elapsed_time = time.time() - start_time
             losses = estimate_loss(model, tokenizer, test_data_loader)
             current_lr = optimizer.param_groups[0]['lr']
             
-            # Collect data for CSV
+            # Collect data for CSV & print it
             log_data.append([
                 i,
                 current_lr,
@@ -130,6 +131,10 @@ def train(
                 f"val loss {losses['val'].mean().item():.4f}, ppl {torch.exp(losses['val']).mean().item():.0f}, "
                 f"time elapsed: {elapsed_time:.2f} seconds"
             )
+
+        # every once in awhile save a checkpoint of the model
+        if (tcfg.checkpoint_interval is not None) and (i % tcfg.checkpoint_interval == 0):
+            save_model(model, cfg, tcfg, log_data, checkpoint=True)
     
     # Disable anomaly detection after the training loop
     if detect_anomoly: torch.autograd.set_detect_anomaly(False)
