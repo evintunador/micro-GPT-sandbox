@@ -85,7 +85,7 @@ def save_model(model, cfg, tcfg, log_data = None, checkpoint = False):
     if checkpoint == False:
         path = f'models/{tcfg.model_name}'
     else: 
-        path = f'models/{tcfg.model_name}/checkpoint-{time.strftime("%Y-%m-%d|%H-%M")}'
+        path = f'models/{tcfg.model_name}/checkpoint-{time.strftime("%Y-%m-%d|%H-%M-%S")}'
     os.makedirs(path, exist_ok=True)
     
     if log_data is not None:
@@ -122,32 +122,14 @@ def load_model(
     from model import customGPT
 
     model_name = f'models/{name}'
-    
+
     # Deserialize the JSON file back to a dictionary
-    #with open(f'{model_name}/model_config.json', 'r') as f:
-        #config_dict = json.load(f)
+    with open(f'{model_name}/model_config.json', 'r') as f:
+        config_dict = json.load(f)
     
     # Convert the dictionary back to a Config object
-    #cfg = ModelConfig(**config_dict)
-    #cfg.device = device
-
-    #cfg = ModelConfig()
-    #cfg.device = device
-    #with open(f'{model_name}/model_config.json', 'w') as f:
-        #json.dump(cfg.__dict__, f)
-
-    config_dict = {
-        # Load the default config
-        **ModelConfig().__dict__
-    }
-    config_dict = {
-        # Update with the saved config
-        **json.load(open(f'{model_name}/model_config.json', 'r'))
-    }
     cfg = ModelConfig(**config_dict)
     cfg.device = device
-
-    print(cfg)
     
     # tokenizer
     path = f'./tokenizers/tiny_stories_tokenizer_{cfg.vocab_len-3}.model'
@@ -155,14 +137,11 @@ def load_model(
     
     # Initialize a blank model
     model = customGPT(cfg).to(cfg.device) 
-    #print('1: ', model)
     
     # Load the saved state dictionary
     path = f'{model_name}/model.pth'
     model.load_state_dict(torch.load(path)) 
     
-    print(cfg)
-    print(sum(p.numel() for p in model.parameters())/1e3, 'K parameters')
-    #print('2: ', model)
+    print(cfg, '\n\n', sum(p.numel() for p in model.parameters())/1e3, 'K parameters')
 
     return model, tokenizer, cfg

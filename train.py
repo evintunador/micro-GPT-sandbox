@@ -39,18 +39,21 @@ def torcherize_batch(tokenizer, batch, max_seq_len, device):
     return x.to(torch.long), y.to(torch.long)
 
 @torch.no_grad()
-def estimate_loss(model, tokenizer, dataloader, eval_iters = 3): # to estimate loss during the training loop
-    out = {}
-    model.eval() # sets model to eval mode
+def estimate_loss(model, tokenizer, train_data_loader, test_data_loader, eval_samples = 3): # to estimate loss during the training loop
+    out = {} # dictionary to record & separate train loss from val loss
+    model.eval() # sets model to eval mode so we're not keeping track of gradients
     for split in ['train', 'val']:
-        losses = torch.zeros(eval_iters)
-        for k in range(eval_iters):
-            batch = next(iter(dataloader))
-            X, Y = torcherize_batch(tokenizer, batch, model.max_seq_len, model.device)
+        losses = torch.zeros(eval_samples)
+        for k in range(eval_samples):
+            # grab a list of strings from either the train or test set
+            batch = next(iter(train_data_loader)) if split == 'train' else next(iter(test_data_loader))
+            # turn list of strings into tensor of token indices
+            X, Y = torcherize_batch(tokenizer, batch, model.max_seq_len, model.device) 
+            # run the model to get loss
             logits, loss = model(X, target_token_ids=Y)
             losses[k] = loss.item()
         out[split] = losses
-    model.train() # just resets to training mode
+    model.train() # just resets the model to training mode
     return out
 
 def scheduler_lambda(current_iter):
@@ -114,8 +117,10 @@ def train(
         # every once in a while evaluate the loss on train and val sets
         if (i % tcfg.eval_interval) == 0 or (i == tcfg.max_iters - 1):
             elapsed_time = time.time() - start_time
-            losses = estimate_loss(model, tokenizer, test_data_loader)
+            losses = estimate_loss(model, tokenizer, train_data_loader, test_data_loader, eval_samples = tcfg.eval_samples)
             current_lr = optimizer.param_groups[0]['lr']
+            if current_lr is torch.Tensor:
+                current_lr = current_lr.item()
             
             # Collect data for CSV & print it
             log_data.append([
@@ -133,8 +138,9 @@ def train(
             )
 
         # every once in awhile save a checkpoint of the model
-        if (tcfg.checkpoint_interval is not None) and (i % tcfg.checkpoint_interval == 0):
-            save_model(model, cfg, tcfg, log_data, checkpoint=True)
+        if tcfg.checkpoint_interval is not None:
+            if (i % tcfg.checkpoint_interval == 0) or i == 0:
+                save_model(model, cfg, tcfg, log_data, checkpoint=True)
     
     # Disable anomaly detection after the training loop
     if detect_anomoly: torch.autograd.set_detect_anomaly(False)
