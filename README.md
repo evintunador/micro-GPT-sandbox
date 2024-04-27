@@ -11,6 +11,7 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 - `model.py` - the actual modules like RMSNorm, MLP, MQA, ResidualLayer, etc
 - `tokenizer.py` - an overly-simplistic and annoyingly inefficient tokenizer with post-sequence padding (should i change to pre-sequence padding?)
 - `tools.py` - A variety of functions & classes that don't fit elsewhere. Of note is the `LoggingModule`, a wrapper for pytorch's `nn.module` that makes for very pretty & easy to follow printing of the progression of tensor shapes
+- `hyperparameter_search.ipynb` - eventually in here i'd like to build an automated system that tests hyperparameters & skips past ones that go over the ram limit, but rn it's empty
 - `tokenizers/`
     - `build_tokenizer_TinyStories.ipynb` - need to redo this with a better regex
     - `tiny_stories_tokenizer_{128, 256, 512, 1024}.model` - need to make more of these with larger vocab sizes
@@ -25,19 +26,20 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 - [x] add option to continually train pre-existing model & update its training data/hyperparameters accordingly
 - [x] add options for different learning rate schedules
 - [x] periodically save model checkpoints
-- [ ] rebuild the tokenizer to use a more complicated regex
-    - [ ] build tokenization models with larger vocabulary sizes
-- [ ] create a hyperparameter search loop
-- [ ] build a simple comparison of diff ppl graphs & model outputs
-- [ ] setup .py files to be runnable in terminal rather than in the .ipynb files
 - [ ] add a loss mask to prevent from training on the padding tokens
     - will need to remove that embedding vector from the model
+- [ ] rebuild the tokenizer to use a more complicated regex
+    - [ ] build tokenization models with larger vocabulary sizes
+- [ ] build a simple notebook for comparison bw diff ppl graphs & model outputs
+- [ ] create a hyperparameter search loop
 
 # potential future TODOs
+- [ ] setup .py files to be runnable in terminal rather than in the .ipynb files
 - [ ] fix & enable batched inference
 - [ ] add an option to use a pre-built tokenizer like GPT2's?
 - [ ] add sparse/local attention mask options
 - [ ] make training parallelizable over multiple GPUs with fairscale
+- [ ] add in TinyStories' methodology for automated story grading by GPT4
 - [ ] different architectures to inorporate
     - [ ] [Mixture of Experts]()
     - [ ] [DiffuSeq]()

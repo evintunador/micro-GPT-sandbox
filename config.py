@@ -82,8 +82,10 @@ class TrainConfig:
         return middle_section / sum(self.T_mult ** i for i in range(self.num_restarts+1))
 
 @dataclass
-class HyperparameterSearchConfig:
+class HyperParameterSearchConfig:
     """
+    NOT CURRENTLY FUNCTIONAL; STILL IN PLANNING STAGE
+    
     Determines the hyperparameters to be tested and the order to test them
     The first entry of each list will be tried first
 
@@ -107,13 +109,13 @@ class HyperparameterSearchConfig:
     mlp_hidden_mult = [4, 2]
     mlp_bias = [False] 
     mlp_nonlinearity = ['GeLU']
-    mlp_gated: = [True]
+    mlp_gated = [True]
 
     # attention
     num_q_heads = [12, 8, 4]
     num_kv_heads = [1] # need to add a conditional that prevents use of num_q_heads < num_kv_heads
     head_dim = [32, 16] 
-    theta: float = [10_000]
+    theta = [10_000]
     max_seq_len = [512] # using a longer seq_len isn't really feasible and using a shorter one is kinda useless
 
     # normalization
@@ -130,9 +132,11 @@ class HyperparameterSearchConfig:
     # learning rate scheduling
     lr_max = [1e-2]
     lr_min = [1e-6, 1e-4, 1e-2] # need to assert if lr_min == lr_max then don't iterate over any of the below
-    warmup_iters = [int(max_iters * i) for i in [0.05]]
-    final_flat_iters = [int(max_iters * i) for i in [0.1, 0.3]
-    anneal_type: str = 'cos' 
+    def warmup_iters(self): 
+        return [int(self.max_iters * i) for i in [0.05]]
+    def final_flat_iters(self):
+        return [int(self.max_iters * i) for i in [0.1, 0.3]]
+    anneal_type = ['cos']
     num_restarts = [0, 3] # need to assert if num_restarts == 0 then don't iterate over T_mult
     T_mult = [1, 2] 
 
@@ -143,5 +147,5 @@ class HyperparameterSearchConfig:
     ### Hyperparameter Testing Order
     # this determines which lists will be iterated first. put hyperparameters that you're more interested in learning about in the front.
     # i recommend putting batch size last since the purpose of testing a smaller batch size is really just to try and fit bigger models into ram
-    def order(self):
-        return [] # need to fill in
+    #def order(self):
+        #return [] # need to fill in
