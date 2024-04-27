@@ -40,10 +40,11 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 - [ ] add sparse/local attention mask options
 - [ ] make training parallelizable over multiple GPUs with fairscale
 - [ ] add in TinyStories' methodology for automated story grading by GPT4
-- [ ] different architectures to inorporate
+- [ ] different architectures/modules to incorporate
+    - [ ] cross-attention bc idk maybe it'll be useful at some point
     - [ ] [Mixture of Experts]()
     - [ ] [DiffuSeq]()
-    - [ ] these new RNN-like transformers such as [Gemma 1.1]() or [Megawhatever]()
+    - [ ] whatever these new RNN-like transformers have going on such as [Gemma 1.1]() or [Megawhatever]()
     - [ ] [Mamba]()
 
 # check me out
