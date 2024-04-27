@@ -259,7 +259,6 @@ class ResidualLayer(LoggingModule):
         super().__init__()
         self.second_norm = cfg.second_resid_norm
         self.dropout_rate = cfg.dropout_rate
-        self.pre_connect_dropout = cfg.pre_connect_dropout
         
         self.pre_attn_norm = Norm(cfg.dim, cfg)
         self.attn = MQSA(cfg)
@@ -305,14 +304,14 @@ class ResidualLayer(LoggingModule):
             mask, 
             cache_len
         )
-        if training and self.pre_connect_dropout: F.dropout(dx, self.dropout_rate)
+        if training: F.dropout(dx, self.dropout_rate)
         if self.second_norm: dx = self.post_attn_norm(dx)
         return dx
 
     @log_io
     def mlp_connect(self, x: torch.Tensor, training: bool) -> torch.Tensor:
         dx = self.mlp(self.pre_mlp_norm(x))
-        if training and self.pre_connect_dropout: F.dropout(dx, self.dropout_rate)
+        if training: F.dropout(dx, self.dropout_rate)
         if self.second_norm: dx = self.post_mlp_norm(dx)
         return dx
 

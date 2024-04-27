@@ -5,6 +5,10 @@ import time
 
 @dataclass
 class ModelConfig:
+    """
+    Design your GPT here
+    Yes I know dropout_rate should probably be in TrainConfig but it was easier to implement from here
+    """
     # general
     dim: int = 64
     vocab_len: int = None # will be set later according to what tokenizer you choose
@@ -13,7 +17,6 @@ class ModelConfig:
 
     # Residual Layers
     num_layers: int = 2 # small models should err on the side of many many layers at the expense of attention & mlp sizes
-    pre_connect_dropout: bool = True # True performs dropout before the residual connection (only when training)
     second_resid_norm: bool = False # True adds an extra Norm after the attn & MLP, like in Grok. Only recommended if using RMSNorm
     
     # MLP
@@ -43,6 +46,9 @@ class ModelConfig:
 
 @dataclass
 class TrainConfig:
+    """
+    Design your training loop here
+    """
     # name of the folder the model will be saved into
     model_name = f'{time.strftime("%Y-%m-%d|%H-%M-%S")}'
     
