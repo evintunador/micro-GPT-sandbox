@@ -1,18 +1,12 @@
 import torch
 from torch import nn
 
-# used for logging
+###########################################################
+########### DEBUGGING / DEMONSTRATION #####################
+###########################################################
 import functools
 import inspect
 
-# used to save & load models
-import os
-import json
-from dataclasses import asdict
-import time
-import csv
-
-# this function will be used throughout for debugging/demonstration purposes
 # using this is way cleaner than cluttering up our code with print statements
 def log_io(func):
     @functools.wraps(func)
@@ -79,8 +73,15 @@ class LoggingModule(nn.Module):
     def enable_function_logging(self, func_name):
         self.disabled_logging_functions.discard(func_name)
 
+###########################################################
+############# SAVE / LOAD MODELS ##########################
+###########################################################
+import os
+import json
+from dataclasses import asdict
+import time
+import csv
 
-###### Saving & Loading Models
 def save_model(model, cfg, tcfg, log_data = None, checkpoint = False):
     if checkpoint == False:
         path = f'models/{tcfg.model_name}'

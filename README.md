@@ -24,12 +24,14 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 - [x] record loss values more permanently & setup a way to compare loss curves between models
 - [x] add option to continually train pre-existing model & update its training data/hyperparameters accordingly
 - [x] add options for different learning rate schedules
-- [ ] create a hyperparameter search loop
 - [x] periodically save model checkpoints
-    - [ ] rebuild the tokenizer to use a more complicated regex
+- [ ] rebuild the tokenizer to use a more complicated regex
     - [ ] build tokenization models with larger vocabulary sizes
+- [ ] create a hyperparameter search loop
+- [ ] build a simple comparison of diff ppl graphs & model outputs
 - [ ] setup .py files to be runnable in terminal rather than in the .ipynb files
 - [ ] add a loss mask to prevent from training on the padding tokens
+    - will need to remove that embedding vector from the model
 
 # potential future TODOs
 - [ ] fix & enable batched inference

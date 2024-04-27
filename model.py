@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 import math
 from typing import Optional, Tuple
+
 from tools import LoggingModule, log_io
 
 ###########################################################
@@ -101,7 +103,7 @@ class MQSA(LoggingModule): # multi-head self-attention
         mask: Optional[torch.Tensor],
         cache_len: int = None,
         training: bool = False,
-    ):
+    ) -> torch.Tensor:
         batch_size, seq_len, _ = x.shape
         xq, xk, xv = self.Wq(x), self.Wk(x), self.Wv(x)
 
@@ -149,7 +151,7 @@ class MQSA(LoggingModule): # multi-head self-attention
         xq: torch.Tensor,
         xk: torch.Tensor,
         freqs_cis: torch.Tensor,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> (torch.Tensor, torch.Tensor):
         xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
         xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
         freqs_cis = self.reshape_for_broadcast(freqs_cis.to(xq.device), xq_)
@@ -162,7 +164,7 @@ class MQSA(LoggingModule): # multi-head self-attention
         self,
         freqs_cis: torch.Tensor, 
         x: torch.Tensor
-    ):
+    ) -> torch.Tensor:
         ndim = x.ndim
         assert 0 <= 1 < ndim
         assert freqs_cis.shape == (x.shape[1], x.shape[-1]), f'freqs_cis.shape {freqs_cis.shape} != (x.shape[1], x.shape[-1]) {(x.shape[1], x.shape[-1])}'
@@ -170,22 +172,33 @@ class MQSA(LoggingModule): # multi-head self-attention
         return freqs_cis.view(*shape)
 
     @log_io
-    def match_headcount(self, keys, values):
+    def match_headcount(
+        self, 
+        keys: torch.Tensor, 
+        values: torch.Tensor
+    ) -> (torch.Tensor, torch.Tensor):
         keys = torch.repeat_interleave(keys, self.num_q_heads // self.num_kv_heads, dim=2)
         values = torch.repeat_interleave(values, self.num_q_heads // self.num_kv_heads, dim=2)
         return keys, values
 
     @log_io
-    def attend(self, queries, keys, training):
+    def attend(
+        self, 
+        queries: 
+        torch.Tensor, 
+        keys: torch.Tensor, 
+        training: bool
+    ) -> torch.Tensor:
         return torch.matmul(queries, keys.transpose(2, 3)) * (self.head_dim ** -0.5)
     
     @log_io
     def calc_output(
         self, 
-        logits, 
-        values, 
-        training
-    ):
+        logits: 
+        torch.Tensor, 
+        values: torch.Tensor, 
+        training: bool
+    ) -> torch.Tensor:
         batch_size, _, seq_len, _ = logits.shape
         scores = F.softmax(logits, dim=-1)
         if training: scores = F.dropout(scores, self.dropout_rate)
@@ -210,7 +223,7 @@ class MLP(LoggingModule):
         self.hidden_size = hidden_dim
         self.dropout_rate = dropout_rate
 
-        # the gate, up and down projections
+        # the up, down, and (optional) gate projections
         self.gated = gated
         if gated: self.Wgate = nn.Linear(input_dim, self.hidden_size, bias)
         self.Wup = nn.Linear(input_dim, self.hidden_size, bias)

@@ -1,13 +1,11 @@
 import torch
 from torch import nn
 
-# dataloader
+###########################################################
+################ LOADING DATA #############################
+###########################################################
 from torch.utils.data import Dataset, DataLoader
 from datasets import load_dataset
-
-# training loop
-import time
-import csv
 
 class TinyStoriesDataset(Dataset):
     def __init__(self, split):
@@ -38,6 +36,10 @@ def torcherize_batch(tokenizer, batch, max_seq_len, device):
     x, y = b[:,:max_seq_len], b[:, 1:]
     return x.to(torch.long), y.to(torch.long)
 
+###########################################################
+#################### EVALUATION ###########################
+###########################################################
+
 @torch.no_grad()
 def estimate_loss(model, tokenizer, train_data_loader, test_data_loader, eval_samples = 3): # to estimate loss during the training loop
     out = {} # dictionary to record & separate train loss from val loss
@@ -55,6 +57,12 @@ def estimate_loss(model, tokenizer, train_data_loader, test_data_loader, eval_sa
         out[split] = losses
     model.train() # just resets the model to training mode
     return out
+
+###########################################################
+#################### TRAINING #############################
+###########################################################
+import time
+import csv
 
 def scheduler_lambda(current_iter):
     from config import TrainConfig
