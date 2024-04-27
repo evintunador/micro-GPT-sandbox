@@ -347,7 +347,7 @@ class customGPT(LoggingModule):
         mask = torch.triu(mask, diagonal=1)
         self.register_buffer('mask', mask)
 
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss(ignore_index = cfg.vocab_len - 1) # ignore the padding token
 
     @log_io
     def forward( # this function is specifically for training, not inference

@@ -19,15 +19,14 @@ This is the model I edit whenever I want to test a new architecture idea I have.
     - to be trained
 - `requirements.txt` - I should probably change this to only include the packages that are actually necessary and not be so strict on versions. The command I used to get this list is `pip freeze | grep -v " @ file://" > requirements.txt`, lmk if you know of a better method
 
-# TODOs
+# definite TODOs
 - [x] setup to use TinyStories dataset by default
 - [x] rewrite `tokenizer.py` with features like bos, eos and padding
 - [x] record loss values more permanently & setup a way to compare loss curves between models
 - [x] add option to continually train pre-existing model & update its training data/hyperparameters accordingly
 - [x] add options for different learning rate schedules
 - [x] periodically save model checkpoints
-- [ ] add a loss mask to prevent from training on the padding tokens
-    - will need to remove that embedding vector from the model
+- [x] add a loss mask to prevent from training on the padding tokens
 - [ ] rebuild the tokenizer to use a more complicated regex
     - [ ] build tokenization models with larger vocabulary sizes
 - [ ] build a simple notebook for comparison bw diff ppl graphs & model outputs
