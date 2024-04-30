@@ -16,21 +16,21 @@ class ModelConfig:
     dropout_rate = 0.1 # percent of neurons to set to 0 during training as a way of adding randomness & improving generalization
 
     # Residual Layers
-    num_layers: int = 2 # small models should err on the side of many many layers at the expense of attention & mlp sizes
+    num_layers: int = 12 # small models should err on the side of many many layers at the expense of attention & mlp sizes
     second_resid_norm: bool = False # True adds an extra Norm after the attn & MLP, like in Grok. Only recommended if using RMSNorm
     
     # MLP
-    mlp_hidden_mult: int = 2 # 4 is the most common and 8 is the highest I've seen. Really adds a ton of parameters
-    mlp_bias: bool = False # whether to use bias weights. Llama3 does not and I'm partial to their choice
+    mlp_hidden_mult: int = 1 # 4 is the most common and 8 is the highest I've seen. Really adds a ton of parameters
+    mlp_bias: bool = True # whether to use bias weights. Llama3 does not and I'm partial to their choice
     mlp_nonlinearity: str = 'GeLU' # options are 'GeLU', 'SiLU', and 'ReLU'(not recommended). Add more options in 'model.py'
     mlp_gated: bool = True # True gives you 50% more MLP parameters to train but also more expressiveness. Turns GeLU into GeGLU, etc
 
     # attention
-    num_q_heads: int = 4 # `num_q_heads % num_kv_heads == 0` must be true
+    num_q_heads: int = 2 # `num_q_heads % num_kv_heads == 0` must be true
     num_kv_heads: int = 1 # set =num_q_heads to revert to regular multi-head attention (not recommended)
-    head_dim = 16 # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
+    head_dim: int = 16 # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
     theta: float = 10_000 # 10_000 is the most common choice. Llama3 uses 50_000
-    max_seq_len: int = 512 # 512 is the most my 8gb of ram can handle
+    max_seq_len: int = 256 # 512 is the most my 8gb of ram can handle
 
     # normalization
     scale_first_resid: bool = True # whether to multiply the first residual state by sqrt(dim)
@@ -56,29 +56,29 @@ class TrainConfig:
     batch_size: int = 32
     
     # total number of batches to run over the course of training
-    max_iters: int = 10 # i recommend at least 1_000
+    max_iters: int = 500 # i recommend at least 1_000
     # how often to print out an update on how training is going
-    eval_interval: int = 5 # doing this too often slows things down hella
+    eval_interval: int = 50 # doing this too often slows things down hella
     # how many samples to take at each evaluation. more means a more accurate loss/perplexity calculation
     eval_samples: int = 3 # this number can things down hella. each sample is almost like doing an extra training iteration
     # how often to save a model checkpoint
-    checkpoint_interval: int = eval_interval # set to None if you don't want checkpoints
+    checkpoint_interval: int = None # eval_interval # set to None if you don't want checkpoints
     
     ### to visualize the learning rate schedule you define here, see cell 7 of training.ipynb
     
     # if you'd like a flat learning rate, set lr_min = lr_max and ignore the variables below
-    lr_max: float = 1e-2
+    lr_max: float = 1e-1
     lr_min: float = 1e-5 
     
     # number of iterations for a linear warmup from lr_min to lr_max
     warmup_iters: int = int(max_iters * 0.1) # if you don't want to use a lr warmup, set = 0
     # number of iterations for a constant learning rate of lr_min at the end of training
-    final_flat_iters: int = int(max_iters * 0.2) # if you don't want to use a final flat lr at the end, set = 0
+    final_flat_iters: int = int(max_iters * 0.4) # if you don't want to use a final flat lr at the end, set = 0
     
     # type of annealment to use. Annealment is when the learning rate decreases over the course of training
     anneal_type: str = 'cos' # options: 'cos'(recommended) and 'lin'
     # number of times to bring the learning rate back up from lr_min to lr_max in-between the warmup & final flat
-    num_restarts: int = 0 # if you don't want to use warm restarts, set =0 and ignore T_mult
+    num_restarts: int = 2 # if you don't want to use warm restarts, set =0 and ignore T_mult
     # relative length of each warm restart compared to the previous.
     T_mult: int = 2 # =1 makes all restarts the same length, <1 means they get shorter and >1 makes them longer
     

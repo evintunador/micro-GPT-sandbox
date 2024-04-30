@@ -30,21 +30,22 @@ This is the model I edit whenever I want to test a new architecture idea I have.
 - [ ] rebuild the tokenizer to use a more complicated regex
     - [ ] build tokenization models with larger vocabulary sizes
 - [ ] build a simple notebook for comparison bw diff ppl graphs & model outputs
+    - [ ] automated analysis by GPT3.5 or 4?
 - [ ] create a hyperparameter search loop
 
 # potential future TODOs
 - [ ] setup .py files to be runnable in terminal rather than in the .ipynb files
 - [ ] fix & enable batched inference
-- [ ] add an option to use a pre-built tokenizer like GPT2's?
+- [ ] add an option to use a pre-built tokenizer from huggingface like GPT2's?
 - [ ] add sparse/local attention mask options
 - [ ] make training parallelizable over multiple GPUs with fairscale
 - [ ] add in TinyStories' methodology for automated story grading by GPT4
 - [ ] different architectures/modules to incorporate
     - [ ] cross-attention bc idk maybe it'll be useful at some point
     - [ ] [Mixture of Experts]()
-    - [ ] [DiffuSeq]()
-    - [ ] whatever these new RNN-like transformers have going on such as [Gemma 1.1]() or [Megawhatever]()
-    - [ ] [Mamba]()
+    - [ ] [DiffuSeq](https://arxiv.org/abs/2210.08933)
+    - [ ] whatever these new RNN-like transformers have going on such as [Gemma 1.1](https://arxiv.org/abs/2402.19427) or [Megawhatever]()
+    - [ ] [Mamba](https://arxiv.org/abs/2312.00752)
 
 # check me out
 - guides on how to build miniature versions of popular models from scratch: [minGemma](https://github.com/evintunador/minGemma), [minGrok](https://github.com/evintunador/minGrok), and [minLlama3](https://github.com/evintunador/minLlama3)

@@ -1,40 +1,7 @@
 import torch
 from torch import nn
-
-###########################################################
-################ LOADING DATA #############################
-###########################################################
-from torch.utils.data import Dataset, DataLoader
-from datasets import load_dataset
-
-class TinyStoriesDataset(Dataset):
-    def __init__(self, split):
-        # Load the dataset
-        self.dataset = load_dataset("noanabeshima/TinyStoriesV2", split=split)
-        
-    def __len__(self):
-        # Return the size of the dataset
-        return len(self.dataset)
-    
-    def __getitem__(self, idx):
-        # Fetch one item from the dataset
-        return self.dataset[idx]['text']
-
-def get_data_loader(batch_size=32, shuffle=True, split='train', num_workers=0):
-    # Create the dataset
-    dataset = TinyStoriesDataset(split)
-    # Create the DataLoader
-    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-
-def torcherize_batch(tokenizer, batch, max_seq_len, device):
-    b = torch.zeros(len(batch), max_seq_len+1)
-    for i, s in enumerate(batch):
-        b[i] = torch.tensor(
-            tokenizer.encode(s, bos=True, eos=True, pad=max_seq_len+1), 
-            device=device
-        )
-    x, y = b[:,:max_seq_len], b[:, 1:]
-    return x.to(torch.long), y.to(torch.long)
+from tools import torcherize_batch
+from tqdm import tqdm
 
 ###########################################################
 #################### EVALUATION ###########################
@@ -59,11 +26,8 @@ def estimate_loss(model, tokenizer, train_data_loader, test_data_loader, eval_sa
     return out
 
 ###########################################################
-#################### TRAINING #############################
+#################### Learning Rate Schedule ###############
 ###########################################################
-import time
-import csv
-
 def scheduler_lambda(current_iter):
     from config import TrainConfig
     tcfg = TrainConfig()
@@ -87,6 +51,12 @@ def scheduler_lambda(current_iter):
         lr = tcfg.lr_min
     return lr
 
+###########################################################
+#################### TRAINING #############################
+###########################################################
+import time
+import csv
+
 def train(
     model, 
     tokenizer, 
@@ -99,7 +69,7 @@ def train(
     log_data: list = None, 
     detect_anomoly: bool = False # use if you're getting crazy errors about a the gradient being broken
 ):
-    from tools import save_model # for checkpoints
+    from tools import save_model
     
     if log_data is None: # for recording loss/ppl curves
         log_data = []
@@ -109,7 +79,7 @@ def train(
     
     start_time = time.time()
     
-    for i in range(tcfg.max_iters):
+    for i in tqdm(range(tcfg.max_iters)):
     
         # sample a batch of data
         batch = next(iter(train_data_loader))
@@ -120,7 +90,6 @@ def train(
         optimizer.zero_grad(set_to_none=True)
         loss.backward() # find the gradients
         optimizer.step() # edit parameters
-        scheduler.step() # Update the learning rate
         
         # every once in a while evaluate the loss on train and val sets
         if (i % tcfg.eval_interval) == 0 or (i == tcfg.max_iters - 1):
@@ -144,7 +113,9 @@ def train(
                 f"val loss {losses['val'].mean().item():.4f}, ppl {torch.exp(losses['val']).mean().item():.0f}, "
                 f"time elapsed: {elapsed_time:.2f} seconds"
             )
-
+            
+        scheduler.step() # Update the learning rate
+        
         # every once in awhile save a checkpoint of the model
         if tcfg.checkpoint_interval is not None:
             if (i % tcfg.checkpoint_interval == 0) or i == 0:

@@ -267,7 +267,7 @@ class ResidualLayer(LoggingModule):
         self.pre_mlp_norm = Norm(cfg.dim, cfg)
         self.mlp = MLP(
             cfg.dim,
-            cfg.mlp_hidden_mult * cfg.dim,
+            int(cfg.mlp_hidden_mult * cfg.dim),
             cfg.dim,
             cfg.mlp_nonlinearity,
             cfg.mlp_gated,

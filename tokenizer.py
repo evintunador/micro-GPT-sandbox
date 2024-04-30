@@ -75,7 +75,11 @@ def load_tokenizer_data(path):
         tokenizer_data = pickle.load(f)
     return tokenizer_data
 
-def get_tokenizer(path):
+def get_tokenizer(size: int = 4096):
+    """
+    sizes include 95, 128, 256, 512, 1024, 2048 & 4096
+    """
+    path = f'./tokenizers/bpe_tokenizer_{size}.model'
     tokenizer_data = load_tokenizer_data(path)
     loaded_stoi = tokenizer_data['stoi']
     loaded_merges = tokenizer_data['merges']
