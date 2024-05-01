@@ -98,7 +98,12 @@ def get_data_loader(batch_size=32, shuffle=True, split='train', num_workers=0):
     # Create the DataLoader
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
-def torcherize_batch(tokenizer, batch, max_seq_len, device):
+def torcherize_batch(
+    tokenizer, 
+    batch, 
+    max_seq_len = 512, 
+    device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
+) -> (torch.Tensor, torch.Tensor):
     b = torch.zeros(len(batch), max_seq_len+1)
     for i, s in enumerate(batch):
         b[i] = torch.tensor(

@@ -353,7 +353,7 @@ class customGPT(LoggingModule):
     def forward( # this function is specifically for training, not inference
         self, 
         input_token_ids: torch.Tensor, 
-        cache_len: int = None,
+        cache_len: int = 0,#None,
         target_token_ids: torch.Tensor = None,
     ) -> (torch.Tensor, torch.Tensor):
         batch_size, seq_len = input_token_ids.shape
@@ -365,14 +365,14 @@ class customGPT(LoggingModule):
             freqs_cis = self.freqs_cis
             training = True
             cache_len = None
-        elif cache_len is not None: # if performing inference
+        else:#if cache_len is not None: # if performing inference
             assert batch_size <= self.max_batch_size # we had to initialize the kv cache to some maximum possible size
             freqs_cis = self.freqs_cis[cache_len : cache_len + seq_len]
             mask = self.mask[:seq_len, :seq_len]
             mask = torch.hstack([torch.zeros((seq_len, cache_len), device=self.device), mask])#.type_as(x)
             training = False
-        else:
-            assert InputError('both cache_len and target_token_ids cannot be NoneType')
+        #else:
+            #assert InputError('both cache_len and target_token_ids cannot be NoneType')
         
         # initialize first residual state and run the model
         x = self.token_embedder(input_token_ids) * self.scale # [batch_size, seq_len, dim]
