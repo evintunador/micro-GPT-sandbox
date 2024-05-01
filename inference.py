@@ -62,7 +62,7 @@ def generate(
     for i in range(max_gen_len):
         with torch.no_grad():
             logits, _ = model(tokens[:,-max_context_window:], cache_len)
-                
+          
         # turn the logits into probabilities and sample from them
         next_token = sampler(logits, temperature, top_p, top_k, vocab_len, model.device)
 
