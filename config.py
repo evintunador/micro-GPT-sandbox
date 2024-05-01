@@ -16,18 +16,18 @@ class ModelConfig:
     dropout_rate = 0.1 # percent of neurons to set to 0 during training as a way of adding randomness & improving generalization
 
     # Residual Layers
-    num_layers: int = 4 # small models should err on the side of many many layers at the expense of attention & mlp sizes
+    num_layers: int = 8 # small models should err on the side of many many layers at the expense of attention & mlp sizes
     second_resid_norm: bool = False # True adds an extra Norm after the attn & MLP, like in Grok. Only recommended if using RMSNorm
     
     # MLP
-    mlp_hidden_mult: int = 4 # if mlp_gated = True then this is equivalent to twice the size of if mlp_gated = False
+    mlp_hidden_mult: int = 2 # if mlp_gated = True then this is equivalent to twice the size of if mlp_gated = False
     mlp_bias: bool = False # whether to use bias weights. Llama3 does not and I'm partial to their choice
     mlp_nonlinearity: str = 'SiLU' # options are 'GeLU', 'SiLU', and 'ReLU'(not recommended). Add more options in 'model.py'
     mlp_gated: bool = True # True gives you 50% more MLP parameters to train but also more expressiveness. Turns GeLU into GeGLU, etc
 
     # attention
-    num_q_heads: int = 16 # `num_q_heads % num_kv_heads == 0` must be true
-    num_kv_heads: int = 4 # set =num_q_heads to revert to regular multi-head attention (not recommended)
+    num_q_heads: int = 8 # `num_q_heads % num_kv_heads == 0` must be true
+    num_kv_heads: int = 2 # set =num_q_heads to revert to regular multi-head attention (not recommended)
     head_dim: int = 16 # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
     theta: float = 10_000 # 10_000 is the most common choice. Llama3 uses 50_000
     max_seq_len: int = 512 # 512 is the most my 8gb of ram can handle
@@ -50,7 +50,7 @@ class TrainConfig:
     Design your training loop here
     """
     # name of the folder the model will be saved into
-    model_name = 'short_and_thick'#f'{time.strftime("%Y-%m-%d|%H-%M-%S")}'
+    model_name = '5fot11_and_skinnyfat'#f'{time.strftime("%Y-%m-%d|%H-%M-%S")}'
     
     weight_decay: float = 0.02
     batch_size: int = 32
