@@ -50,6 +50,7 @@ Other than the below TODO lists, appreciated contributions include bug fixes, ad
 - [ ] add an option to use a pre-built tokenizer from huggingface like GPT2's?
 - [ ] add sparse/local attention mask options
 - [ ] make training parallelizable over multiple GPUs with fairscale
+- [ ] build an easy way to design blocks in residual networks using lists of strings. for example, ['Norm->Attn->+->Norm->MLP', 'Norm->MoE'] would be the parallel MoE from [Snowflake](https://www.snowflake.com/en/)
 - [ ] different architectures/modules to incorporate
     - [ ] cross-attention as a standalone module bc idk maybe it'll be useful at some point
     - [ ] [Mixture of Experts]()
