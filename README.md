@@ -16,9 +16,16 @@ Notice that even though the models we're training here are very small (0.5m to 5
 - `model.py`: the actual pytorch modules like RMSNorm, MLP, MQA, ResidualLayer, etc
 - `tokenizer.py`: an overly-simplistic and annoyingly inefficient tokenizer with bos & eos tokens and post-sequence padding
 - `tools.py`: A variety of functions & classes that don't fit elsewhere and/or are used by more than one of the jupyter notebooks. Of note is the `LoggingModule`, a wrapper for pytorch's `nn.module` that makes for very pretty & easy to follow printing of the progression of tensor shapes over in `testing_modules.ipynb`
+- `model_code/`
+    - `baseGPT.py`
+    - `baseGPT_config.py`
+    - `modules/`
+        - `attentions.py`
+        - `norms.py`
+        - `feedforward.py`
 - `tokenizers/`
     - `bpe_tokenizer_{95, 128, 256, 512, 1024, 2048}.model`: the 95 one is character-wise tokenization
-- `models/`
+- `trained_models/`
     - `0.5m_{short_and_thick, 5foot11_and_skinnyfat, tall_and_skinny}/`: a series of 0.5m parameter models designed to be compared against one another
         - `log_data.csv`: record of loss & perplexity data over the course of training
         - `model_config.json`: hyperparameters of the model
@@ -39,6 +46,7 @@ Other than the below TODO lists, appreciated contributions include bug fixes, ad
 - [x] rebuild the tokenizer to use more complicated pairing rules
     - [x] build tokenization models with larger vocabulary sizes
 - [x] build a simple notebook for comparison bw diff ppl graphs & model outputs
+- [ ] rearrange file structure such that every future experiment i do can be a submodule git repo. this outermost repo should only include the base model and all shared files
 - [ ] create a hyperparameter search loop that knows to cancel a run if it's going over your available vram usage
 - [ ] fix & enable batched inference
     - [ ] update `model_evaluation.ipynb`'s teacher-forcing topk analysis to get more accurate %'s using batches
