@@ -14,8 +14,6 @@ def log_io(func):
         # Check if logging is enabled globally and for the specific function
         if not self.logging_enabled or func.__name__ in self.disabled_logging_functions:
             return func(self, *args, **kwargs)
-        #if not self.logging_enabled:
-            #return func(self, *args, **kwargs)
 
         def log_item(item, name, level=0, is_root=False):
             indent = "    " * level
@@ -29,6 +27,13 @@ def log_io(func):
                 else:
                     print(f"{indent}Tuple '{name}':")
                     for idx, sub_item in enumerate(item):
+                        log_item(sub_item, f"{name}[{idx}]", level + 1)
+            elif isinstance(item, list):
+                print(f"{indent}List '{name}':")
+                for idx, sub_item in enumerate(item):
+                    if isinstance(sub_item, torch.Tensor):
+                        print(f"{indent}    Tensor '{name}[{idx}]' shape: {sub_item.shape} dtype: {sub_item.dtype}")
+                    else:
                         log_item(sub_item, f"{name}[{idx}]", level + 1)
             elif isinstance(item, int):
                 print(f"{indent}Integer '{name}': Value={item}")
