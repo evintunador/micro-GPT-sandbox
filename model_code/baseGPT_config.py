@@ -16,32 +16,32 @@ class ModelConfig:
     dropout_rate = 0.1 # percent of neurons to set to 0 during training as a way of adding randomness & improving generalization
 
     # Residual Layers
-    num_layers: int = 10 # small models should err on the side of many many layers at the expense of attention & mlp sizes
+    num_layers: int = 4 # small models should err on the side of many many layers at the expense of attention & mlp sizes
     second_resid_norm: bool = False # True adds an extra Norm after the attn & MLP, like in Grok. Only recommended if using RMSNorm
     
     # MLP
-    mlp_hidden_mult: int = 1 # if mlp_gated = True then this is equivalent to twice the size of if mlp_gated = False
+    mlp_hidden_mult: int = 2.666 # if mlp_gated = True then this is equivalent to 1.5x the size of if mlp_gated = False
     mlp_bias: bool = False # whether to use bias weights. Llama3 does not and I'm partial to their choice
     mlp_nonlinearity: str = 'SiLU' # options are 'GeLU', 'SiLU', and 'ReLU'(not recommended). Add more options in 'model.py'
-    mlp_gated: bool = True # True gives you 50% more MLP parameters to train but also more expressiveness. Turns GeLU into GeGLU, etc
+    mlp_gated: bool = True # Turns GeLU into GeGLU, giving you 50% more MLP parameters to train but also more expressiveness
 
     # attention
-    num_q_heads: int = 10 # `num_q_heads % num_kv_heads == 0` must be true
-    num_kv_heads: int = 2 # set =num_q_heads to revert to regular multi-head attention (not recommended)
+    num_q_heads: int = 4 # `num_q_heads % num_kv_heads == 0` must be true
+    num_kv_heads: int = 1 # set =num_q_heads to revert to regular multi-head attention (not recommended)
     head_dim: int = 16 # most common choices are 32, 64 and especially 128 bc those are what works with FlashAttention
     theta: float = 10_000 # 10_000 is the most common choice. Llama3 uses 50_000
-    max_seq_len: int = 512 # 512 is the most my 8gb of ram can handle
+    max_seq_len: int = 256 # 512 is the most my 8gb of ram can handle
 
     # normalization
     scale_first_resid: bool = True # whether to multiply the first residual state by sqrt(dim)
     norm_type: str = 'RMSNorm' # options are 'RMSNorm'(recommended), 'LayerNorm', and 'CosineNorm'. Add more options in 'model.py'
-    norm_affine: bool = True # whether to use a linear layer after each norm. recommended especially if you're using LayerNorm & CosineNorm
+    norm_affine: bool = True # whether to use a linear layer after each norm. recommended especially if you're using LayerNorm or CosineNorm
     norm_bias: bool = True # whether to add a bias to the linear layer after each norm. doesn't do anything if norm_affine == False
     eps: float = 1e-6 # small constant to prevent division by 0. Not really worth editing
 
     # inference (kv caching)
     max_batch_size: int = 1 # i haven't tried changing this from 1
-    # it needs to be set >1 at the first model initialization if you ever want to be able to do batched inference
+    # it needs to be set >1 at the first model initialization if you ever want to be able to do batched inference. i should fix that
     # i think batched inference is probably broken rn bc of my shitty tokenizer. might fix in future
 
 @dataclass
@@ -50,13 +50,13 @@ class TrainConfig:
     Design your training loop here
     """
     # name of the folder the model will be saved into
-    model_name = 'tall_and_skinny'#f'{time.strftime("%Y-%m-%d|%H-%M-%S")}'
+    model_name = f'baseGPT_{time.strftime("%Y-%m-%d|%H-%M-%S")}'
     
     weight_decay: float = 0.02
     batch_size: int = 32
     
     # total number of batches to run over the course of training
-    max_iters: int = 1_000 # i recommend at least 1_000
+    max_iters: int = 100 # i recommend at least 1_000
     # how often to print out an update on how training is going
     eval_interval: int = 10 # doing this too often slows things down hella but also gives detailed log data
     # how many samples to take at each evaluation. more means a more accurate loss/perplexity calculation
@@ -65,10 +65,13 @@ class TrainConfig:
     checkpoint_interval: int = None # eval_interval # set to None if you don't want checkpoints
     
     ### to visualize the learning rate schedule you define here, see cell 7 of training.ipynb
-    
-    # if you'd like a flat learning rate, set lr_min = lr_max and ignore the variables below
+
+    # Initial learning rate to start from during the warmup
+    lr_init: float = 1e-5
+    # Maximum and minimum learning rates during annealing
     lr_max: float = 1e-1
-    lr_min: float = 1e-6 
+    lr_min: float = 1e-3
+    # if you'd like a flat learning rate, set lr_init = lr_min = lr_max and ignore the variables below
     
     # number of iterations for a linear warmup from lr_min to lr_max
     warmup_iters: int = int(max_iters * 0.1) # if you don't want to use a lr warmup, set = 0
@@ -86,6 +89,14 @@ class TrainConfig:
     def T_0(self): # I DO NOT RECOMMEND EDITING THIS
         middle_section = self.max_iters - self.warmup_iters - self.final_flat_iters
         return middle_section / sum(self.T_mult ** i for i in range(self.num_restarts+1))
+
+
+
+
+
+
+
+
 
 @dataclass
 class HyperParameterSearchConfig:

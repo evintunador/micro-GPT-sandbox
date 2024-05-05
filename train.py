@@ -29,12 +29,12 @@ def estimate_loss(model, tokenizer, train_data_loader, test_data_loader, eval_sa
 #################### Learning Rate Schedule ###############
 ###########################################################
 def scheduler_lambda(current_iter):
-    from config import TrainConfig
+    from model_code.baseGPT_config import TrainConfig
     tcfg = TrainConfig()
     T_i = tcfg.T_0()
     if current_iter < tcfg.warmup_iters:
         # Linear warmup
-        lr = tcfg.lr_min + (tcfg.lr_max - tcfg.lr_min) * (current_iter / tcfg.warmup_iters)
+        lr = tcfg.lr_init + (tcfg.lr_max - tcfg.lr_init) * (current_iter / tcfg.warmup_iters)
     elif current_iter < tcfg.max_iters - tcfg.final_flat_iters:
         # Cosine annealing with warm restarts
         cycle_iter = current_iter - tcfg.warmup_iters

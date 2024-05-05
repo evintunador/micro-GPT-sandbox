@@ -39,13 +39,14 @@ Other than the below TODO lists, appreciated contributions include bug fixes, ad
 - [x] rebuild the tokenizer to use more complicated pairing rules
     - [x] build tokenization models with larger vocabulary sizes
 - [x] build a simple notebook for comparison bw diff ppl graphs & model outputs
-- [ ] add option to continually train pre-existing models & update its training data/hyperparameters accordingly
 - [ ] create a hyperparameter search loop that knows to cancel a run if it's going over your available vram usage
 - [ ] fix & enable batched inference
     - [ ] update `model_evaluation.ipynb`'s teacher-forcing topk analysis to get more accurate %'s using batches
 
 # potential future TODOs
 - [ ] setup .py files to be runnable in terminal rather than in the .ipynb files
+- [ ] make tokenizer & function that turns list of token indices into tensors more efficient
+- [ ] add option to continually train pre-existing models & update its training data/hyperparameters accordingly
 - [ ] add automated model comparison analysis by GPT4 like in the [TinyStories](https://arxiv.org/abs/2305.07759) paper
 - [ ] add an option to use a pre-built tokenizer from huggingface like GPT2's
 - [ ] add sparse/local attention mask options

@@ -112,6 +112,25 @@ def torcherize_batch(
         )
     x, y = b[:,:max_seq_len], b[:, 1:]
     return x.to(torch.long), y.to(torch.long)
+
+# this might be a faster alternative but idk how it works and i couldn't see a noticeable performance improvement
+#from concurrent.futures import ThreadPoolExecutor
+#def torcherize_batch(tokenizer, batch, max_seq_len=512, device: str = 'cuda' if torch.cuda.is_available() else 'cpu'):
+#    with ThreadPoolExecutor() as executor:
+#        # Encode each text in parallel using ThreadPoolExecutor
+#        encoded_batch = list(executor.map(
+#            lambda text: tokenizer.encode(text, bos=True, eos=True, pad=max_seq_len + 1), 
+#            batch
+#        ))
+
+#    # Create the torch tensor from the encoded batch
+#    b = torch.tensor(encoded_batch, device=device)
+#
+#    # Extract input (x) and target (y) sequences
+#    x, y = b[:, :max_seq_len], b[:, 1:]
+#
+#    # Ensure data types are correct
+#    return x.to(torch.long), y.to(torch.long)
     
 ###########################################################
 ############# SAVE / LOAD MODELS ##########################
@@ -123,10 +142,10 @@ import time
 import csv
 
 def save_model(model, cfg, tcfg, log_data = None, checkpoint = False):
-    if checkpoint == False:
-        path = f'models/{tcfg.model_name}'
-    else: 
-        path = f'models/{tcfg.model_name}/checkpoint-{time.strftime("%Y-%m-%d|%H-%M-%S")}'
+    if checkpoint == True:
+        path = f'trained_models/{tcfg.model_name}/checkpoint-{time.strftime("%Y-%m-%d|%H-%M-%S")}'
+    else:
+        path = f'trained_models/{tcfg.model_name}'
     os.makedirs(path, exist_ok=True)
     
     if log_data is not None:
@@ -158,11 +177,11 @@ def load_model(
     name: str, 
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
 ):
-    from config import ModelConfig
+    from model_code.baseGPT_config import ModelConfig
     from tokenizer import get_tokenizer
-    from model import customGPT
+    from model_code.baseGPT import baseGPT
 
-    model_name = f'models/{name}'
+    model_name = f'trained_models/{name}'
 
     # Deserialize the JSON file back to a dictionary
     with open(f'{model_name}/model_config.json', 'r') as f:
@@ -177,7 +196,7 @@ def load_model(
     tokenizer = get_tokenizer(vocab_size) 
     
     # Initialize a blank model
-    model = customGPT(cfg).to(cfg.device) 
+    model = baseGPT(cfg).to(cfg.device) 
     
     # Load the saved state dictionary
     path = f'{model_name}/model.pth'
@@ -213,7 +232,7 @@ def plot_column_from_csv(models, x_column, y_column, log_x=False, log_y=False, t
     plt.figure(figsize=(10, 6))
     
     for model in models:
-        path = f'models/{model}/log_data.csv'
+        path = f'trained_models/{model}/log_data.csv'
         try:
             data = pd.read_csv(path)
             if x_column not in data.columns or y_column not in data.columns:
