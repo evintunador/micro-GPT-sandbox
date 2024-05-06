@@ -1,3 +1,5 @@
+*README IS OUT OF DATE. CURRENTLY GOING THROUGH OVERHAUL TO MAKE THIS PROJECT FAR MORE FLEXIBLE*
+
 # my base model
 This is the model I edit whenever I want to test a new architecture idea I have. It's designed to be flexible with many large architecture changes being tweakable from the config, easy to demonstrate what's happening in terms of the progression of tensor shapes, and easy to read/edit the code. The default config values are most similar to [minLlama3](https://github.com/evintunador/minLlama3) but include options for tweaks from other models such as the post-attention and post-MLP norm from [minGrok](https://github.com/evintunador/minGrok). Feel free to toy around and build off of it
 
