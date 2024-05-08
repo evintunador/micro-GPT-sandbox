@@ -35,7 +35,7 @@ def sampler(
 
 def generate(
     prompt: str,
-    model,  # Function to get model outputs
+    model,  # function that should output (batch_size,seq_len,vocab_len) tensor and a tensor w/ a single loss value (not used)
     tokenizer,
     max_gen_len: int = None,
     memory_saver_div: int = 1, # defaults to full max_seq_len**2 memory use. must be power of 2
