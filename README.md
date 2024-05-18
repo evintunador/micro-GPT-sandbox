@@ -2,7 +2,7 @@
 
 # micro GPT sandbox
 ## about
-This repo is means as a hub for all of my novel GPT architecture experiments. Of note is [customGPT](https://github.com/evintunador/customGPT), the template that I always start with. If you would like to experiment with ideas you have for how to change GPTs, join me!
+This repo is means as a hub for all of my novel GPT architecture experiments. Of note is [templateGPT](https://github.com/evintunador/templateGPT), the template that I always start with. If you would like to experiment with ideas you have for how to change GPTs, join me!
 
 The idea behind the files in this repo is that they allow for easily comparing the performance of different experimental models and keeping each experiment in its own git repo with the use of submodules. 
 
