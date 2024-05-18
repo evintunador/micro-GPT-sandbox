@@ -1,6 +1,6 @@
 [submodule "models/fractal-head-attention"]
 	path = models/fractal-head-attention
 	url = git@github.com:evintunador/fractal-head-attention.git
-[submodule "models/customGPT"]
-	path = models/customGPT
-	url = git@github.com:evintunador/customGPT.git
+[submodule "models/templateGPT"]
+	path = models/templateGPT
+	url = git@github.com:evintunador/templateGPT.git
