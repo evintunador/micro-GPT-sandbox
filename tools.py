@@ -113,7 +113,7 @@ import time
 import csv
 
 def load_model(
-    name: str, # the filepath to the model. ex: 'models/customGPT/trained/customGPT_1m_tall_and_skinny'
+    name: str, # the filepath to the model. ex: 'models/templateGPT/trained/templateGPT_1m_tall_and_skinny'
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
 ):
     path_parts = name.split('/')
@@ -142,8 +142,8 @@ def load_model(
     get_tokenizer = imported_objects.get('get_tokenizer')
     
     # defining the tokenizer
-    vocab_size = cfg.vocab_len - 3
-    tokenizer = run_in_directory(get_tokenizer, os.path.join(path_parts[0], path_parts[1]), vocab_size)
+    #vocab_size = cfg.vocab_len - 3
+    tokenizer = run_in_directory(get_tokenizer, os.path.join(path_parts[0], path_parts[1]), cfg.vocab_len)#vocab_size)
     
     # Initialize a blank model
     model = Model(cfg).to(cfg.device) 
