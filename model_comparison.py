@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from typing import List
-from tools import load_model, torcherize_batch, get_data_loader, import_from_nested_path
+from tools import load_model, torcherize_batch, get_data_loader
 
 def plot_column_from_csv(models, x_column, y_column, log_x=False, log_y=False, trim_percentage=0):
     """
@@ -80,8 +80,7 @@ def evaluate_models(models_to_compare: List, topk: int = 5):
     results = {}
     for model_name in models_to_compare:
         
-        path_parts = model_name.split('/')
-        model, tokenizer, cfg = load_model(f'{path_parts[2]}/{path_parts[3]')
+        model, tokenizer, cfg = load_model(model_name)
     
         x, y = torcherize_batch(tokenizer, text, max_seq_len = cfg.max_seq_len)
         # x and y are tensors shape [batch_size, max_seq_len] of dtype torch.int64
@@ -97,13 +96,14 @@ def evaluate_models(models_to_compare: List, topk: int = 5):
         results[model_name] = {
             'accuracy': topk_accuracy.item(),
             'topk_indices': topk_indices,
-            'tokenizer': tokenizer
+            'tokenizer': tokenizer,
+            'correct_indices': y
         }
 
-    return results, y
+    return results
 
 # Define a function to format the model output
-def format_model_output(model_name, data, topk, tokenizer, correct_data):
+def format_model_output(model_name, data, topk, tokenizer, correct_indices):
     print(f"Model: {model_name}")
     print(f"  - Top-{topk} Accuracy: {data['accuracy']*100:.2f}%")
     
@@ -116,7 +116,7 @@ def format_model_output(model_name, data, topk, tokenizer, correct_data):
     # Display comparisons
     print('True\tPredicted')
     for j in range(25):
-        true_token = tokenizer.expand_token(correct_data[0, j].item())  # Get the true token
+        true_token = tokenizer.expand_token(correct_indices[0, j].item())  # Get the true token
         predicted_tokens = [tokenizer.expand_token(idx) for idx in topk_indices[0, j]]  # List of predicted tokens
             
         # Display true and predicted tokens
