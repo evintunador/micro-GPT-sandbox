@@ -4,3 +4,6 @@
 [submodule "models/templateGPT"]
 	path = models/templateGPT
 	url = git@github.com:evintunador/templateGPT.git
+[submodule "models/MemoryMosaics"]
+	path = models/MemoryMosaics
+	url = git@github.com:evintunador/MemoryMosaics.git
