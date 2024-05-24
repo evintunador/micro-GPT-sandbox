@@ -78,7 +78,10 @@ def evaluate_models(models_to_compare: List, topk: int = 5):
 
     # Evaluate models
     results = {}
+    i = 0
     for model_name in models_to_compare:
+        print(i)
+        i += 1
         
         model, tokenizer, cfg = load_model(model_name)
     
@@ -88,7 +91,6 @@ def evaluate_models(models_to_compare: List, topk: int = 5):
         with torch.no_grad():
             logits, _ = model(x)
     
-        topk = 5
         topk_accuracy = calculate_topk_accuracy(logits, y, k = topk, padding_idx = cfg.vocab_len - 1)
         topk_indices = torch.topk(logits, topk, dim=2).indices
         

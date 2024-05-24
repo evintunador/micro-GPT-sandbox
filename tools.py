@@ -71,6 +71,12 @@ def import_from_nested_path(folders, file, items):
     try:
         # Construct the module path from a list of folders
         module_path = ".".join(folders) + "." + file
+        print(f"Trying to import from module path: {module_path}")
+        
+        # Ensure the base directory is in sys.path
+        base_dir = os.path.abspath(os.path.join(*folders))
+        if base_dir not in sys.path:
+            sys.path.append(base_dir)
         
         # Remove the module from sys.modules if it's already imported
         if module_path in sys.modules:
@@ -90,6 +96,7 @@ def import_from_nested_path(folders, file, items):
                 
     except ImportError as e:
         print(f"Failed to import module: {e}")
+        return None
 
 # a wrapper to force a given function to behave using a specified working directory rather than the current working directory
 def run_in_directory(func, path, *args, **kwargs):
@@ -127,21 +134,24 @@ def load_model(
         'config', 
         ['ModelConfig']
     )
+    if imported_items is None:
+        raise ImportError("ModelConfig not found in the specified path.")
     ModelConfig = imported_items['ModelConfig']
-    
-    #imported_items = import_from_nested_path(
-    #    [path_parts[0], path_parts[1], 'modules'], 
-    #    'model', 
-    #    ['Model']
-    #)
-    #Model = imported_items['Model']
 
-    # grabbing the config and Model class from the correct directories
-    def internal():
-        from modules.model import Model
-        #from config import ModelConfig
-        return Model#, ModelConfig
-    Model = run_in_directory(internal, os.path.join(path_parts[0], path_parts[1]))
+    # import the model class
+    #def internal():
+    #    from modules.model import Model
+    #    return Model
+    #Model = run_in_directory(internal, os.path.join(path_parts[0], path_parts[1]))
+    # alternative that doesn't seem to be working. whenever I un-comment it insists that there is no 'modules'
+    imported_items = import_from_nested_path(
+        [path_parts[0], path_parts[1], 'modules'], 
+        'model', 
+        ['Model']
+    )
+    if imported_items is None:
+        raise ImportError("Model not found in the specified path.")
+    Model = imported_items['Model']
 
     # Deserialize the JSON file back to a dictionary
     with open(f'{name}/model_config.json', 'r') as f:
@@ -157,11 +167,12 @@ def load_model(
         'tokenizer', 
         ['get_tokenizer']
     )
+    if imported_objects is None:
+        raise ImportError("get_tokenizer not found in the specified path.")
     get_tokenizer = imported_objects.get('get_tokenizer')
     
     # defining the tokenizer
-    #vocab_size = cfg.vocab_len - 3
-    tokenizer = run_in_directory(get_tokenizer, os.path.join(path_parts[0], path_parts[1]), cfg.vocab_len)#vocab_size)
+    tokenizer = run_in_directory(get_tokenizer, os.path.join(path_parts[0], path_parts[1]), cfg.vocab_len)
     
     # Initialize a blank model
     model = Model(cfg).to(cfg.device) 

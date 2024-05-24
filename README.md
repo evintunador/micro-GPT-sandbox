@@ -22,11 +22,10 @@ or if you'd like to be selective about your submodules, then just clone them ind
 - `model_comparison.py`: holds the functions used in `model_comparison.ipynb`
 - `tools.py`: holds functions used for both `model_comparison.ipynb` and `inference.ipynb`
 - `inference.ipynb`: for looking at the output of a specific model from one of the submodules
-- `model_comparison.ipynb` is for comparing the loss curves and top-k teacher forcing accuracy of multiple models side-by-side. by default it's set to compare `models/templateGPT/trained/templateGPT_1m_short_and_thicc` against `models/fractal-head-attention/trained/FHA_1m_short_and_thicc`. As you can see, this fractal head attention idea doesn't perform as well, although to be fair it uses 1 fewer attention heads per model and around 20k fewer parameters
+- `model_comparison.ipynb` is for comparing the loss curves and top-k teacher forcing accuracy of multiple models side-by-side. by default it's set to compare `models/templateGPT/trained/templateGPT_1m_short_and_thicc` against `models/fractal-head-attention/trained/FHA_1m_short_and_thicc`. As you can see, this fractal head attention idea doesn't perform as well, although to be fair it uses 1 fewer attention heads per model and around 20k fewer parameters. *this is currently broken. topk accuracy is bugged & misleading; only use the loss curve comparison*
 
 ## definite TODOs
-- [ ] build more experiments
-- [ ] improve templateGPT (better tokenizer, more options, etc)
+- [ ] fix the model topk comparison
 
 ## potential future TODOs
 - [ ] build a clearer guide on how to use this repo, including what parts of the submodules should not be changed in order to maintain compatibility
