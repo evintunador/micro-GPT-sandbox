@@ -7,3 +7,6 @@
 [submodule "models/MemoryMosaics"]
 	path = models/MemoryMosaics
 	url = git@github.com:evintunador/MemoryMosaics.git
+[submodule "models/FutureFormer"]
+	path = models/FutureFormer
+	url = git@github.com:evintunador/FutureFormer.git
