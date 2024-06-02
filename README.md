@@ -26,9 +26,10 @@ or if you'd like to be selective about your submodules, then just clone them ind
 
 ## definite TODOs
 - [ ] fix the model topk comparison
+    - [ ] fix dynamic importing. i think i can just list off all the files in modules/ and delete all of them from cache and that should fix the problem
+- [ ] add a better guide on how to use submodules
 
 ## potential future TODOs
-- [ ] build a clearer guide on how to use this repo, including what parts of the submodules should not be changed in order to maintain compatibility
 - [ ] build a script that calls the OpenAI API and has GPT4 rate & compare the outputs of different models
 
 ## how to contribute
